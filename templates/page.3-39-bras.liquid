@@ -1,0 +1,38 @@
+{% comment %}
+  Custom page template showing only products from a specific collection
+{% endcomment %}
+
+{% assign collection_handle = '3-39-bra' %}
+
+<section class="collection-page">
+  <h1>{{ collections[collection_handle].title }}</h1>
+  <div class="collection-description">
+    {{ collections[collection_handle].description }}
+  </div>
+
+  <div class="product-grid">
+    {% for product in collections[collection_handle].products %}
+      <div class="product-card">
+        <a href="{{ product.url }}">
+          <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+          <h3>{{ product.title }}</h3>
+          <p>{{ product.price | money }}</p>
+        </a>
+      </div>
+    {% else %}
+      <p>No products found in this collection.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+.product-card img {
+  width: 100%;
+  border-radius: 8px;
+}
+</style>

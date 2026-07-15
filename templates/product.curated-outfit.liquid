@@ -1,0 +1,1052 @@
+{% comment %}
+  ============================================================
+  CURATED OUTFIT PRODUCT TEMPLATE
+  ============================================================
+
+  Product metafield:
+
+    Namespace: ellie_order_info
+    Key:       product_collecton
+
+  Note: "product_collecton" reflects the existing metafield key
+  spelling in Shopify.
+
+  Example metafield value:
+
+    Mocha Latte - 3 Items
+
+  The value is converted into the matching collection handle:
+
+    mocha-latte-3-items
+
+  Every Online Store-published product in that collection is
+  rendered dynamically. The outfit can contain any number of
+  component products.
+{% endcomment %}
+
+
+{% comment %}
+  ============================================================
+  RESOLVE THE MATCHING COLLECTION
+  ============================================================
+{% endcomment %}
+
+{% assign collection_title = product.metafields.ellie_order_info.product_collection.value %}
+
+{% if collection_title == blank %}
+  {% assign collection_title = product.metafields.ellie_order_info.product_collection %}
+{% endif %}
+
+{% assign collection_handle = collection_title | handleize %}
+{% assign outfit_collection = collections[collection_handle] %}
+{% assign parent_variant = product.selected_or_first_available_variant %}
+
+
+<div
+  id="CuratedOutfit"
+  class="curated-outfit"
+  data-curated-outfit
+  data-parent-product-id="{{ product.id }}"
+  data-parent-variant-id="{{ parent_variant.id }}"
+  data-product-collection="{{ collection_handle | escape }}"
+>
+
+  <div class="curated-outfit__layout">
+
+    {% comment %}
+      ========================================================
+      LEFT SIDE: PARENT PRODUCT IMAGE GALLERY
+      ========================================================
+    {% endcomment %}
+
+    <div class="curated-outfit__media">
+
+      {% if product.images.size > 0 %}
+
+        <div class="curated-outfit__media-grid">
+
+          {% for image in product.images %}
+
+            <figure class="curated-outfit__media-item">
+
+              <img
+                class="curated-outfit__image"
+                src="{{ image | img_url: '1200x' }}"
+                srcset="
+                  {{ image | img_url: '400x' }} 400w,
+                  {{ image | img_url: '600x' }} 600w,
+                  {{ image | img_url: '800x' }} 800w,
+                  {{ image | img_url: '1000x' }} 1000w,
+                  {{ image | img_url: '1200x' }} 1200w
+                "
+                sizes="
+                  (max-width: 767px) 100vw,
+                  (max-width: 1100px) 50vw,
+                  36vw
+                "
+                alt="{{ image.alt | default: product.title | escape }}"
+                width="{{ image.width }}"
+                height="{{ image.height }}"
+                loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+              >
+
+            </figure>
+
+          {% endfor %}
+
+        </div>
+
+      {% else %}
+
+        <div class="curated-outfit__no-media">
+          No product images are available.
+        </div>
+
+      {% endif %}
+
+    </div>
+
+
+    {% comment %}
+      ========================================================
+      RIGHT SIDE: PRODUCT INFORMATION AND SIZE SELECTORS
+      ========================================================
+    {% endcomment %}
+
+    <div class="curated-outfit__info">
+
+      <div class="curated-outfit__info-inner">
+
+        <header class="curated-outfit__header">
+
+          <h1 class="curated-outfit__title">
+            {{ product.title }}
+          </h1>
+
+          <div class="curated-outfit__price">
+            {{ product.price | money }}
+          </div>
+
+          {% if product.description != blank %}
+
+            <div class="curated-outfit__description rte">
+              {{ product.description }}
+            </div>
+
+          {% endif %}
+
+        </header>
+
+
+        {% comment %}
+          ====================================================
+          DYNAMIC COMPONENT PRODUCTS
+          ====================================================
+        {% endcomment %}
+
+        {% if outfit_collection != blank %}
+
+          <div
+            class="curated-outfit__items"
+            data-curated-outfit-items
+          >
+
+            {% for outfit_product in outfit_collection.products %}
+
+              {% comment %}
+                Locate the product option named "Size". Size may
+                be option 1, 2, or 3.
+              {% endcomment %}
+
+              {% assign size_option_position = 0 %}
+
+              {% for option in outfit_product.options_with_values %}
+
+                {% assign normalized_option_name = option.name | strip | downcase %}
+
+                {% if normalized_option_name == 'size' %}
+                  {% assign size_option_position = option.position %}
+                {% endif %}
+
+              {% endfor %}
+
+
+              <fieldset
+                class="curated-outfit__item"
+                data-outfit-item
+                data-product-id="{{ outfit_product.id }}"
+                data-product-handle="{{ outfit_product.handle }}"
+                data-product-title="{{ outfit_product.title | escape }}"
+              >
+
+                <legend class="curated-outfit__item-title">
+                  {{ outfit_product.title }}
+                </legend>
+
+
+                {% if size_option_position > 0 %}
+
+                  <div
+                    class="curated-outfit__sizes"
+                    data-size-options
+                  >
+
+                    {% assign seen_sizes = '|' %}
+                    {% assign available_size_count = 0 %}
+
+                    {% for variant in outfit_product.variants %}
+
+                      {% if variant.available %}
+
+                        {% assign size_value = blank %}
+
+                        {% case size_option_position %}
+
+                          {% when 1 %}
+                            {% assign size_value = variant.option1 %}
+
+                          {% when 2 %}
+                            {% assign size_value = variant.option2 %}
+
+                          {% when 3 %}
+                            {% assign size_value = variant.option3 %}
+
+                        {% endcase %}
+
+
+                        {% assign size_value = size_value | strip %}
+
+                        {% if size_value != blank %}
+
+                          {% assign size_token = '|' | append: size_value | append: '|' %}
+
+                          {% unless seen_sizes contains size_token %}
+
+                            {% assign seen_sizes = seen_sizes | append: size_value | append: '|' %}
+                            {% assign available_size_count = available_size_count | plus: 1 %}
+
+                            <label class="curated-outfit__size">
+
+                              <input
+                                type="radio"
+                                class="curated-outfit__size-input"
+                                name="outfit_{{ outfit_product.handle }}"
+                                value="{{ size_value | escape }}"
+                                data-outfit-size
+                                data-product-id="{{ outfit_product.id }}"
+                                data-product-handle="{{ outfit_product.handle }}"
+                                data-product-title="{{ outfit_product.title | escape }}"
+                              >
+
+                              <span class="curated-outfit__size-label">
+                                {{ size_value }}
+                              </span>
+
+                            </label>
+
+                          {% endunless %}
+
+                        {% endif %}
+
+                      {% endif %}
+
+                    {% endfor %}
+
+                  </div>
+
+
+                  {% if available_size_count == 0 %}
+
+                    <p class="curated-outfit__component-error">
+                      This item is currently unavailable.
+                    </p>
+
+                  {% endif %}
+
+                {% else %}
+
+                  <p class="curated-outfit__component-error">
+                    No Size option was found for this item.
+                  </p>
+
+                {% endif %}
+
+              </fieldset>
+
+            {% endfor %}
+
+          </div>
+
+
+          <div
+            class="curated-outfit__message"
+            data-curated-outfit-message
+            role="status"
+            aria-live="polite"
+          ></div>
+
+
+          {% if parent_variant.available %}
+
+            <button
+              type="button"
+              class="curated-outfit__add-to-cart"
+              data-curated-outfit-add
+            >
+              Add outfit to cart
+            </button>
+
+          {% else %}
+
+            <button
+              type="button"
+              class="curated-outfit__add-to-cart"
+              disabled
+            >
+              Sold out
+            </button>
+
+          {% endif %}
+
+        {% else %}
+
+          <div
+            class="curated-outfit__fatal-error"
+            role="alert"
+          >
+
+            <p>
+              The matching curated outfit collection could not be found.
+            </p>
+
+            {% if collection_title == blank %}
+
+              <p>
+                This product does not have an
+                <code>ellie_order_info.product_collection</code>
+                metafield value.
+              </p>
+
+            {% else %}
+
+              <p>
+                Expected collection:
+                <strong>{{ collection_title }}</strong>
+              </p>
+
+              <p>
+                Expected handle:
+                <strong>{{ collection_handle }}</strong>
+              </p>
+
+            {% endif %}
+
+          </div>
+
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+{% comment %}
+  ============================================================
+  COMPONENT PRODUCT DATA
+
+  This provides the browser with component products and their
+  variants without requesting a collection JSON endpoint.
+  ============================================================
+{% endcomment %}
+
+{% if outfit_collection != blank %}
+
+  <script
+    type="application/json"
+    id="CuratedOutfitData"
+  >
+    {
+      "parent_product_id": {{ product.id | json }},
+      "parent_variant_id": {{ parent_variant.id | json }},
+      "product_collection": {{ outfit_collection.handle | json }},
+      "products": [
+        {% for outfit_product in outfit_collection.products %}
+          {
+            "id": {{ outfit_product.id | json }},
+            "title": {{ outfit_product.title | json }},
+            "handle": {{ outfit_product.handle | json }},
+            "options": {{ outfit_product.options | json }},
+            "variants": [
+              {% for variant in outfit_product.variants %}
+                {
+                  "id": {{ variant.id | json }},
+                  "title": {{ variant.title | json }},
+                  "available": {{ variant.available | json }},
+                  "option1": {{ variant.option1 | json }},
+                  "option2": {{ variant.option2 | json }},
+                  "option3": {{ variant.option3 | json }}
+                }{% unless forloop.last %},{% endunless %}
+              {% endfor %}
+            ]
+          }{% unless forloop.last %},{% endunless %}
+        {% endfor %}
+      ]
+    }
+  </script>
+
+{% endif %}
+
+
+{% comment %}
+  ============================================================
+  ADD-TO-CART JAVASCRIPT
+
+  The parent curated-outfit variant is added to the cart with:
+
+    product_collection:
+      mocha-latte-3-items
+
+    selected_products:
+      {
+        "component-product-handle": "M",
+        "another-component-handle": "L"
+      }
+
+  selected_products is stored as a JSON string in the Shopify
+  line-item property.
+  ============================================================
+{% endcomment %}
+
+<script>
+(function() {
+  'use strict';
+
+  var root = document.querySelector('[data-curated-outfit]');
+
+  if (!root) {
+    return;
+  }
+
+  var addButton = root.querySelector('[data-curated-outfit-add]');
+  var messageElement = root.querySelector(
+    '[data-curated-outfit-message]'
+  );
+
+  var outfitItems = root.querySelectorAll('[data-outfit-item]');
+
+  if (!addButton) {
+    return;
+  }
+
+
+  function showMessage(message, type) {
+    if (!messageElement) {
+      return;
+    }
+
+    messageElement.textContent = message || '';
+    messageElement.classList.remove(
+      'curated-outfit__message--error',
+      'curated-outfit__message--success'
+    );
+
+    if (type === 'error') {
+      messageElement.classList.add(
+        'curated-outfit__message--error'
+      );
+    }
+
+    if (type === 'success') {
+      messageElement.classList.add(
+        'curated-outfit__message--success'
+      );
+    }
+  }
+
+
+  function getSelections() {
+    var selections = {};
+    var missingProducts = [];
+    var unavailableProducts = [];
+
+    Array.prototype.forEach.call(
+      outfitItems,
+      function(item) {
+        var productHandle = item.getAttribute(
+          'data-product-handle'
+        );
+
+        var productTitle = item.getAttribute(
+          'data-product-title'
+        );
+
+        var sizeInputs = item.querySelectorAll(
+          'input[data-outfit-size]'
+        );
+
+        var selectedInput = item.querySelector(
+          'input[data-outfit-size]:checked'
+        );
+
+        if (sizeInputs.length === 0) {
+          unavailableProducts.push(productTitle);
+          return;
+        }
+
+        if (!selectedInput) {
+          missingProducts.push(productTitle);
+          return;
+        }
+
+        selections[productHandle] = selectedInput.value;
+      }
+    );
+
+    return {
+      valid:
+        missingProducts.length === 0 &&
+        unavailableProducts.length === 0,
+
+      selections: selections,
+      missingProducts: missingProducts,
+      unavailableProducts: unavailableProducts
+    };
+  }
+
+
+  function focusFirstMissingSelection() {
+    var firstMissingItem = null;
+
+    Array.prototype.some.call(
+      outfitItems,
+      function(item) {
+        var hasInputs = item.querySelector(
+          'input[data-outfit-size]'
+        );
+
+        var hasSelection = item.querySelector(
+          'input[data-outfit-size]:checked'
+        );
+
+        if (hasInputs && !hasSelection) {
+          firstMissingItem = item;
+          return true;
+        }
+
+        return false;
+      }
+    );
+
+    if (firstMissingItem) {
+      firstMissingItem.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+
+      var firstInput = firstMissingItem.querySelector(
+        'input[data-outfit-size]'
+      );
+
+      if (firstInput) {
+        firstInput.focus();
+      }
+    }
+  }
+
+
+  function setLoadingState(isLoading) {
+    addButton.disabled = isLoading;
+
+    if (isLoading) {
+      addButton.setAttribute('aria-busy', 'true');
+      addButton.setAttribute(
+        'data-original-label',
+        addButton.textContent
+      );
+
+      addButton.textContent = 'Adding outfit...';
+    } else {
+      addButton.removeAttribute('aria-busy');
+
+      var originalLabel = addButton.getAttribute(
+        'data-original-label'
+      );
+
+      if (originalLabel) {
+        addButton.textContent = originalLabel;
+        addButton.removeAttribute('data-original-label');
+      }
+    }
+  }
+
+
+  function parseErrorResponse(response) {
+    return response.json()
+      .catch(function() {
+        return {};
+      })
+      .then(function(errorData) {
+        var message =
+          errorData.description ||
+          errorData.message ||
+          'Unable to add the outfit to the cart.';
+
+        throw new Error(message);
+      });
+  }
+
+
+  function addOutfitToCart() {
+    showMessage('');
+
+    var selectionResult = getSelections();
+
+    if (selectionResult.unavailableProducts.length > 0) {
+      showMessage(
+        'This outfit cannot currently be purchased because ' +
+        'these items have no available sizes: ' +
+        selectionResult.unavailableProducts.join(', ') +
+        '.',
+        'error'
+      );
+
+      return;
+    }
+
+    if (selectionResult.missingProducts.length > 0) {
+      showMessage(
+        'Please select a size for: ' +
+        selectionResult.missingProducts.join(', ') +
+        '.',
+        'error'
+      );
+
+      focusFirstMissingSelection();
+      return;
+    }
+
+    var parentVariantId = root.getAttribute(
+      'data-parent-variant-id'
+    );
+
+    var productCollection = root.getAttribute(
+      'data-product-collection'
+    );
+
+    if (!parentVariantId) {
+      showMessage(
+        'The curated outfit does not have a purchasable parent variant.',
+        'error'
+      );
+
+      return;
+    }
+
+    var cartItem = {
+      id: Number(parentVariantId),
+      quantity: 1,
+      properties: {
+        product_collection: productCollection,
+        selected_products: JSON.stringify(
+          selectionResult.selections
+        )
+      }
+    };
+
+    setLoadingState(true);
+    showMessage('Adding outfit to cart...');
+
+    fetch('/cart/add.js', {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+
+      credentials: 'same-origin',
+
+      body: JSON.stringify({
+        items: [cartItem]
+      })
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        return parseErrorResponse(response);
+      }
+
+      return response.json();
+    })
+    .then(function() {
+      showMessage(
+        'Outfit added to cart.',
+        'success'
+      );
+
+      window.location.href = '/cart';
+    })
+    .catch(function(error) {
+      console.error(
+        'Curated outfit add-to-cart error:',
+        error
+      );
+
+      showMessage(
+        error.message ||
+        'There was a problem adding the outfit to the cart.',
+        'error'
+      );
+
+      setLoadingState(false);
+    });
+  }
+
+
+  addButton.addEventListener(
+    'click',
+    addOutfitToCart
+  );
+
+})();
+</script>
+
+
+<style>
+  /* ========================================================
+     PAGE LAYOUT
+     ======================================================== */
+
+  .curated-outfit {
+    width: 100%;
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 30px 24px 70px;
+  }
+
+  .curated-outfit__layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 42px;
+  }
+
+
+  /* ========================================================
+     LEFT IMAGE GALLERY
+     ======================================================== */
+
+  .curated-outfit__media {
+    flex: 0 0 calc(64% - 21px);
+    min-width: 0;
+  }
+
+  .curated-outfit__media-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .curated-outfit__media-item {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+
+  .curated-outfit__image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .curated-outfit__no-media {
+    padding: 50px 20px;
+    background: #f5f5f5;
+    text-align: center;
+  }
+
+
+  /* ========================================================
+     RIGHT PRODUCT INFORMATION
+     ======================================================== */
+
+  .curated-outfit__info {
+    flex: 1 1 calc(36% - 21px);
+    min-width: 300px;
+  }
+
+  .curated-outfit__info-inner {
+    position: sticky;
+    top: 120px;
+  }
+
+  .curated-outfit__header {
+    margin-bottom: 24px;
+  }
+
+  .curated-outfit__title {
+    margin: 0 0 12px;
+    font-size: 32px;
+    line-height: 1.2;
+  }
+
+  .curated-outfit__price {
+    margin: 0 0 20px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .curated-outfit__description {
+    margin-bottom: 26px;
+  }
+
+  .curated-outfit__description > :first-child {
+    margin-top: 0;
+  }
+
+  .curated-outfit__description > :last-child {
+    margin-bottom: 0;
+  }
+
+
+  /* ========================================================
+     COMPONENT PRODUCTS AND SIZES
+     ======================================================== */
+
+  .curated-outfit__items {
+    border-bottom: 1px solid #c7c7c7;
+  }
+
+  .curated-outfit__item {
+    min-width: 0;
+    margin: 0;
+    padding: 18px 0 20px;
+    border: 0;
+    border-top: 1px solid #c7c7c7;
+  }
+
+  .curated-outfit__item-title {
+    display: block;
+    width: 100%;
+    margin: 0 0 13px;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .curated-outfit__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .curated-outfit__size {
+    position: relative;
+    display: inline-block;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .curated-outfit__size-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .curated-outfit__size-label {
+    display: inline-flex;
+    min-width: 50px;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border: 1px solid #333;
+    background: #fff;
+    color: #222;
+    line-height: 1;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .curated-outfit__size:hover
+  .curated-outfit__size-label {
+    border-color: #000;
+  }
+
+  .curated-outfit__size-input:checked +
+  .curated-outfit__size-label {
+    border-color: #222;
+    background: #222;
+    color: #fff;
+  }
+
+  .curated-outfit__size-input:focus +
+  .curated-outfit__size-label {
+    outline: 2px solid #222;
+    outline-offset: 3px;
+  }
+
+  .curated-outfit__component-error {
+    margin: 8px 0 0;
+    color: #b42318;
+  }
+
+
+  /* ========================================================
+     STATUS MESSAGE AND ADD-TO-CART BUTTON
+     ======================================================== */
+
+  .curated-outfit__message {
+    min-height: 24px;
+    margin: 15px 0;
+  }
+
+  .curated-outfit__message--error {
+    color: #b42318;
+  }
+
+  .curated-outfit__message--success {
+    color: #167348;
+  }
+
+  .curated-outfit__add-to-cart {
+    display: block;
+    width: 100%;
+    min-height: 52px;
+    margin: 0;
+    padding: 14px 24px;
+    border: 1px solid #222;
+    border-radius: 0;
+    background: #222;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .curated-outfit__add-to-cart:hover:not(:disabled) {
+    background: #fff;
+    color: #222;
+  }
+
+  .curated-outfit__add-to-cart:focus {
+    outline: 2px solid #222;
+    outline-offset: 3px;
+  }
+
+  .curated-outfit__add-to-cart:disabled {
+    border-color: #999;
+    background: #999;
+    color: #fff;
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+
+  .curated-outfit__fatal-error {
+    padding: 20px;
+    border: 1px solid #b42318;
+    color: #b42318;
+  }
+
+  .curated-outfit__fatal-error p:first-child {
+    margin-top: 0;
+  }
+
+  .curated-outfit__fatal-error p:last-child {
+    margin-bottom: 0;
+  }
+
+
+  /* ========================================================
+     TABLET
+     ======================================================== */
+
+  @media screen and (max-width: 1100px) {
+
+    .curated-outfit {
+      padding-right: 18px;
+      padding-left: 18px;
+    }
+
+    .curated-outfit__layout {
+      gap: 28px;
+    }
+
+    .curated-outfit__media {
+      flex-basis: calc(58% - 14px);
+    }
+
+    .curated-outfit__info {
+      flex-basis: calc(42% - 14px);
+      min-width: 280px;
+    }
+
+    .curated-outfit__title {
+      font-size: 28px;
+    }
+
+  }
+
+
+  /* ========================================================
+     MOBILE
+     ======================================================== */
+
+  @media screen and (max-width: 767px) {
+
+    .curated-outfit {
+      padding: 15px 15px 45px;
+    }
+
+    .curated-outfit__layout {
+      display: block;
+    }
+
+    .curated-outfit__media,
+    .curated-outfit__info {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .curated-outfit__media-grid {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+
+    .curated-outfit__info {
+      margin-top: 28px;
+    }
+
+    .curated-outfit__info-inner {
+      position: static;
+    }
+
+    .curated-outfit__title {
+      font-size: 26px;
+    }
+
+    .curated-outfit__size-label {
+      min-width: 48px;
+      min-height: 42px;
+    }
+
+  }
+</style>

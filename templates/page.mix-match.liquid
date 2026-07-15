@@ -1,0 +1,2794 @@
+<div id="mix-match-app" class="mmapp">
+  <div class="mmapp__card">
+    <h2 class="mmapp__title">Mix &amp; Match (3 Items)</h2>
+    <p class="mmapp__subtitle">Pick a top, then a bottom, then a sports bra.</p>
+
+    <div class="mmapp__stepper" id="mmStepLabel"></div>
+
+    <div class="mmapp__controls">
+      <button type="button" class="mmapp__btn mmapp__btn--ghost" id="mmBackBtn" disabled>Back</button>
+      <button type="button" class="mmapp__btn mmapp__btn--ghost" id="mmResetBtn">Reset</button>
+    </div>
+
+    <div class="mmapp__status" id="mmStatus" aria-live="polite"></div>
+
+    <div class="mmapp__mobileFlow" id="mmMobileFlow" hidden>
+      <div class="mmapp__mobileFlowInner" id="mmMobileFlowInner"></div>
+    </div>
+
+    <div class="mmapp__layout">
+      <div class="mmapp__left">
+        <div class="mmapp__filters" id="mmFilters" hidden>
+          <div class="mmapp__filtersRow">
+            <label class="mmapp__filterLabel">
+              <span>Filter by color</span>
+              <select id="mmFilterColor" class="mmapp__select">
+                <option value="">All colors</option>
+              </select>
+            </label>
+
+            <label class="mmapp__filterLabel">
+              <span>Filter by size</span>
+              <select id="mmFilterSize" class="mmapp__select">
+                <option value="">All sizes</option>
+              </select>
+            </label>
+
+            <div class="mmapp__filterLabel mmapp__filterLabel--action">
+              <span aria-hidden="true">&nbsp;</span>
+              <button type="button" id="mmClearFilters" class="mmapp__btn mmapp__btn--ghost">
+                Clear filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mmapp__grid" id="mmGrid"></div>
+      </div>
+
+      <aside class="mmapp__aside" id="mmAside" hidden>
+        <div class="mmapp__asideTitle">Your selections</div>
+        <div id="mmAsideList"></div>
+
+        <div class="mmapp__summary mmapp__summary--inAside" id="mmSummary" hidden>
+          <h3 class="mmapp__h3">Your picks</h3>
+          <ol class="mmapp__summaryList" id="mmSummaryList"></ol>
+
+          <button type="button" class="mmapp__btn mmapp__btn--primary" id="mmAddToCartBtn">
+            Add Mix &amp; Match to cart
+          </button>
+
+          <p class="mmapp__fineprint">
+            This adds “Mix and Match” item to your cart, with the above items.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root{
+    --mm-sticky-top:180px;
+    --mm-sticky-gap:14px;
+  }
+
+  html, body { overscroll-behavior-y: contain; }
+
+  .mmapp{max-width:1100px;margin:24px auto;padding:0 16px}
+  .mmapp__card{border:1px solid rgba(0,0,0,.12);border-radius:14px;padding:18px}
+  .mmapp__title{margin:0 0 6px;font-size:28px;line-height:1.1}
+  .mmapp__subtitle{margin:0 0 14px;opacity:.8}
+  .mmapp__stepper{margin:12px 0 16px;font-weight:700;font-size:22px;line-height:1.3}
+  .mmapp__controls{display:flex;gap:10px;align-items:center;margin:8px 0 12px}
+  .mmapp__status{margin:8px 0 14px;min-height:20px}
+
+  .mmapp__mobileFlow{display:none}
+
+  .mmapp__mobileFlowInner {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 18px 2px 0;
+  }
+
+  .mmapp__mobileFlowInner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mmapp__mobileStep {
+    flex: 0 0 auto;
+    font-size: 11px;
+    line-height: 1;
+    padding: 8px 11px;
+    white-space: nowrap;
+  }
+
+  .mmapp__mobileStep[data-state="done"]{
+    border-color:#111;
+    background:#111;
+    color:#fff;
+  }
+
+  .mmapp__mobileStep[data-state="current"]{
+    border-color:#111;
+    box-shadow:0 0 0 2px rgba(0,0,0,.12);
+  }
+
+  .mmapp__mobileStepLabel{opacity:.72;margin-right:4px}
+
+  .mmapp__layout{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:16px;
+  }
+
+  .mmapp__left{min-width:0}
+
+  .mmapp__filters{
+    margin:0 0 14px;
+    padding:12px;
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    background:#fff;
+  }
+
+  .mmapp__filtersRow{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+  }
+
+  .mmapp__filterLabel{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:180px;
+    margin:0;
+    flex:1 1 180px;
+  }
+
+  .mmapp__filterLabel span{
+    font-size:13px;
+    font-weight:700;
+    line-height:16px;
+    margin:0;
+    display:flex;
+    align-items:center;
+  }
+
+  .mmapp__filterLabel--action{flex:0 0 auto}
+
+  .mmapp__filters .mmapp__select{
+    width:100%;
+    height:44px;
+    min-height:44px;
+    margin:0;
+    padding:0 12px;
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,.2);
+    background:#fff;
+    box-sizing:border-box;
+    line-height:normal;
+    appearance:auto;
+  }
+
+  #mmClearFilters,
+  #mmClearFilters.mmapp__btn,
+  #mmClearFilters.mmapp__btn--ghost{
+    height:44px;
+    min-height:44px;
+    margin:0 !important;
+    padding:0 12px !important;
+    border-radius:10px;
+    box-sizing:border-box;
+    line-height:normal;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    align-self:flex-end;
+    white-space:nowrap;
+  }
+
+  .mmapp__grid{
+    display:grid;
+    grid-template-columns:repeat(1,minmax(0,1fr));
+    gap:12px;
+  }
+
+  @media (min-width:720px){
+    .mmapp__grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+
+  @media (min-width:1024px){
+    .mmapp__grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+
+  @media (min-width:960px){
+    .mmapp__layout{
+      grid-template-columns:minmax(0,1fr) 320px;
+      align-items:start;
+    }
+
+    .mmapp__aside{
+      position:sticky;
+      top:var(--mm-sticky-top);
+      max-height:calc(100vh - var(--mm-sticky-top) - var(--mm-sticky-gap));
+      overflow:auto;
+      overscroll-behavior:contain;
+    }
+  }
+
+  @media (max-width:959.98px){
+    .mmapp__aside{
+      position:static;
+      max-height:none;
+      overflow:visible;
+    }
+  }
+
+  .mmapp__item{
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    min-width:0;
+  }
+
+  .mmapp__imgWrap{
+    position:relative;
+    width:100%;
+    padding-top:150%;
+    background:rgba(0,0,0,.03);
+    overflow:hidden;
+    display:block;
+    cursor:pointer;
+  }
+
+  .mmapp__img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:1;
+  }
+
+  .mmapp__body{
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+    min-width:0;
+  }
+
+  .mmapp__name{
+    margin:0;
+    font-size:16px;
+    line-height:1.25;
+    min-height:calc(1.25em * 2 + 8px);
+    max-height:calc(1.25em * 2 + 8px);
+    overflow:hidden;
+  }
+
+  .mmapp__price{margin:0;opacity:.8}
+  .mmapp__select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,.2);background:#fff}
+  .mmapp__btn{padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,.2);background:#fff;cursor:pointer}
+  .mmapp__btn[disabled]{opacity:.5;cursor:not-allowed}
+  .mmapp__summary{margin-top:18px;border-top:1px solid rgba(0,0,0,.12);padding-top:14px}
+
+  .mmapp__summary--inAside{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(0,0,0,.12);
+  }
+
+  .mmapp__summary--inAside .mmapp__summaryList{
+    margin:0 0 12px;
+    padding-left:18px;
+  }
+
+  .mmapp__summary--inAside .mmapp__btn--primary{width:100%}
+
+  .mmapp__h3{margin:0 0 10px}
+  .mmapp__summaryList{margin:0 0 12px;padding-left:18px}
+  .mmapp__fineprint{margin:10px 0 0;opacity:.75;font-size:13px}
+
+  .mmapp__btn--ghost{
+    position:relative;
+    overflow:hidden;
+    background:transparent;
+    color:#111;
+    border-color:rgba(0,0,0,.25);
+    transition:color 180ms ease,border-color 180ms ease;
+    isolation:isolate;
+  }
+
+  .mmapp__btn--ghost::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:#111;
+    transform:translate(55%,55%) rotate(-25deg) scale(1.6);
+    transform-origin:bottom right;
+    clip-path:polygon(100% 100%,100% 100%,100% 100%,100% 100%);
+    transition:clip-path 260ms ease,transform 260ms ease;
+    z-index:-1;
+  }
+
+  .mmapp__btn--ghost:hover,
+  .mmapp__btn--ghost:focus-visible{
+    color:#fff;
+    border-color:#111;
+  }
+
+  .mmapp__btn--ghost:hover::before,
+  .mmapp__btn--ghost:focus-visible::before{
+    clip-path:polygon(0 0,100% 0,100% 100%,0 100%);
+    transform:translate(0,0) rotate(0deg) scale(1);
+  }
+
+  .mmapp__btn--ghost[disabled]::before{content:none}
+
+  .mmapp__btn--primary{
+    position:relative;
+    overflow:hidden;
+    background:#fff;
+    color:#111;
+    border:1px solid rgba(0,0,0,.25);
+    isolation:isolate;
+    transition:color 180ms ease,border-color 180ms ease;
+  }
+
+  .mmapp__btn--primary::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:#111;
+    transform:translate(55%,55%) rotate(-25deg) scale(1.6);
+    transform-origin:bottom right;
+    clip-path:polygon(100% 100%,100% 100%,100% 100%,100% 100%);
+    transition:clip-path 260ms ease,transform 260ms ease;
+    z-index:-1;
+  }
+
+  .mmapp__btn--primary:hover,
+  .mmapp__btn--primary:focus-visible{
+    color:#fff;
+    border-color:#111;
+  }
+
+  .mmapp__btn--primary:hover::before,
+  .mmapp__btn--primary:focus-visible::before{
+    clip-path:polygon(0 0,100% 0,100% 100%,0 100%);
+    transform:translate(0,0) rotate(0deg) scale(1);
+  }
+
+  .mmapp__swatches{
+    display:flex;
+    flex-wrap:wrap;
+    padding:4px 4px 8px;
+    box-sizing:border-box;
+    min-height:96px;
+    max-height:96px;
+    overflow:hidden;
+    align-content:flex-start;
+    margin:-4px 0 0 -4px;
+  }
+
+  .mmapp__swatches > .mmapp__swatch{
+    margin:4px 0 0 4px;
+  }
+
+  .mmapp__swatch{
+    width:38px;
+    height:38px;
+    padding:0;
+    border-radius:50%;
+    border:1px solid rgba(0,0,0,.25);
+    background:#fff;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    appearance:none;
+    -webkit-appearance:none;
+    flex:0 0 38px;
+  }
+
+  .mmapp__swatch img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:50%;
+    display:block;
+  }
+
+  .mmapp__swatch[aria-pressed="true"]{
+    border-color:#111;
+    box-shadow:0 0 0 2px #111;
+  }
+
+/* begin Desktop only Safari */
+
+.mm-desktop-safari .mmapp__swatch{
+  position: relative;
+  outline: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mm-desktop-safari .mmapp__swatch:focus,
+.mm-desktop-safari .mmapp__swatch:focus-visible,
+.mm-desktop-safari .mmapp__swatch:active{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mm-desktop-safari .mmapp__swatch::-moz-focus-inner{
+  border: 0;
+}
+
+.mm-desktop-safari .mmapp__swatch::after{
+  content:"";
+  position:absolute;
+  top:-2px;
+  right:-2px;
+  bottom:-2px;
+  left:-2px;
+  border-radius:50%;
+  border:2px solid transparent;
+  pointer-events:none;
+  box-sizing:border-box;
+}
+
+.mm-desktop-safari .mmapp__swatch[aria-pressed="true"]{
+  border-color:#111 !important;
+  box-shadow:none !important;
+}
+
+.mm-desktop-safari .mmapp__swatch[aria-pressed="true"]::after{
+  border-color:#111 !important;
+}
+/*end Desktop Safari fix only */
+
+  .mmapp__helper{
+    font-size:13px;
+    line-height:1.25;
+    opacity:.8;
+    margin:0;
+    min-height:calc(1.25em * 3 + 6px);
+    max-height:calc(1.25em * 3 + 6px);
+    overflow:hidden;
+  }
+
+  .mmapp__chosenColor{font-weight:700;margin-left:6px}
+
+  .mmapp__aside{
+    width:auto;
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    padding:12px;
+    background:#fff;
+  }
+
+  .mmapp__asideTitle{margin:0 0 10px;font-size:20px;font-weight:700;opacity:.8}
+
+  .mmapp__picked{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:10px 0;
+    border-top:1px solid rgba(0,0,0,.10);
+  }
+
+  .mmapp__picked:first-child{border-top:none;padding-top:0}
+
+  .mmapp__pickedImg{
+    width:64px;
+    height:64px;
+    border-radius:10px;
+    object-fit:cover;
+    background:rgba(0,0,0,.04);
+    flex:0 0 auto;
+  }
+
+  .mmapp__pickedMeta{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+
+  .mmapp__pickedName{
+    font-size:13px;
+    font-weight:700;
+    line-height:1.2;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .mmapp__pickedSize{font-size:13px;opacity:.85}
+
+  .mmapp__detailsRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:2px 0 6px;
+  }
+
+  .mmapp__detailsLeft{display:flex;gap:12px}
+  .mmapp__detailsRight{display:flex}
+
+  .mmapp__detailsLink{
+    display:inline-block;
+    font-size:13px;
+    line-height:1;
+    text-decoration:underline;
+    cursor:pointer;
+    color:#111 !important;
+    opacity:.85;
+  }
+
+  .mmapp__detailsLink:hover{opacity:1}
+
+  .mmapp__modalOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    z-index:9999;
+  }
+
+  .mmapp__modal{
+    width:min(720px,100%);
+    max-height:min(75vh,720px);
+    overflow:auto;
+    background:#fff;
+    border-radius:14px;
+    border:1px solid rgba(0,0,0,.15);
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+  }
+
+  .mmapp__modalHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+    border-bottom:1px solid rgba(0,0,0,.10);
+  }
+
+  .mmapp__modalTitle{margin:0;font-size:16px;font-weight:800;line-height:1.2}
+
+  .mmapp__modalClose{
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(0,0,0,.25);
+    background:#fff;
+    color:#111;
+    border-radius:10px;
+    padding:8px 10px;
+    cursor:pointer;
+    isolation:isolate;
+    transition:color 180ms ease,border-color 180ms ease;
+  }
+
+  .mmapp__modalClose::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:#111;
+    transform:translate(55%,55%) rotate(-25deg) scale(1.6);
+    transform-origin:bottom right;
+    clip-path:polygon(100% 100%,100% 100%,100% 100%,100% 100%);
+    transition:clip-path 260ms ease,transform 260ms ease;
+    z-index:-1;
+  }
+
+  .mmapp__modalClose:hover,
+  .mmapp__modalClose:focus-visible{
+    color:#fff;
+    border-color:#111;
+  }
+
+  .mmapp__modalClose:hover::before,
+  .mmapp__modalClose:focus-visible::before{
+    clip-path:polygon(0 0,100% 0,100% 100%,0 100%);
+    transform:translate(0,0) rotate(0deg) scale(1);
+  }
+
+  .mmapp__modalBody{
+    padding:12px 14px 14px;
+    font-size:14px;
+    max-height:70vh;
+    overflow:auto;
+  }
+
+  .mmapp__modalBody ul{margin:0;padding-left:18px}
+  .mmapp__modalBody li{margin:6px 0}
+
+  .mmapp__pickedLabelLink{
+    font-size:18px;
+    font-weight:700;
+    opacity:.7;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    color:#111 !important;
+    cursor:pointer;
+    display:inline-block;
+  }
+
+  .mmapp__pickedLabelLink:hover{opacity:1}
+
+  .mmapp__galleryOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.72);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:10000;
+  }
+
+  .mmapp__gallery{
+    position:relative;
+    width:min(900px,100%);
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .mmapp__galleryMain{
+    position:relative;
+    width:100%;
+    background:#fff;
+    border-radius:14px;
+    overflow:hidden;
+  }
+
+  .mmapp__galleryMain img{
+    display:block;
+    width:100%;
+    max-height:80vh;
+    object-fit:contain;
+    background:#fff;
+  }
+
+  .mmapp__galleryNav{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:44px;
+    height:44px;
+    border-radius:999px;
+    border:1px solid rgba(0,0,0,.25);
+    background:#fff;
+    color:#111;
+    cursor:pointer;
+    z-index:2;
+    font-size:28px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .mmapp__galleryNav--prev{left:12px}
+  .mmapp__galleryNav--next{right:12px}
+
+  .mmapp__galleryClose{
+    appearance:none;
+    -webkit-appearance:none;
+    position:relative;
+    align-self:flex-end;
+    border:1px solid rgba(0,0,0,.25);
+    background:#fff !important;
+    color:#111 !important;
+    border-radius:10px;
+    padding:8px 12px;
+    cursor:pointer;
+    line-height:1.2;
+    transition:background-color 180ms ease,color 180ms ease,border-color 180ms ease;
+  }
+
+  .mmapp__galleryClose:hover,
+  .mmapp__galleryClose:focus-visible{
+    background:#111 !important;
+    color:#fff !important;
+    border-color:#111 !important;
+  }
+
+  .mmapp__galleryCaption{color:#fff;font-size:14px;text-align:center}
+
+  @media (hover: none), (pointer: coarse) {
+    .mmapp__btn--ghost::before,
+    .mmapp__btn--primary::before,
+    .mmapp__modalClose::before {
+      content: none !important;
+    }
+
+    .mmapp__btn--ghost,
+    .mmapp__btn--primary,
+    .mmapp__modalClose,
+    .mmapp__galleryClose {
+      transition: none !important;
+    }
+  }
+
+  @media (max-width: 959.98px) {
+    .mmapp {
+      margin: 10px auto;
+      padding: 0 8px;
+    }
+
+    .mmapp__card {
+      padding: 10px;
+      border-radius: 10px;
+      overflow: visible;
+    }
+
+    .mmapp__title {
+      font-size: 21px;
+      line-height: 1.08;
+      margin-bottom: 4px;
+    }
+
+    .mmapp__subtitle {
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .mmapp__stepper {
+      display: none;
+    }
+
+    .mmapp__status {
+      display: block;
+      font-size: 12px;
+      line-height: 1.25;
+      min-height: 18px;
+      margin: 6px 0 8px;
+    }
+
+    .mmapp__mobileFlow{
+      display:none !important;
+    }
+
+    .mmapp__mobileFlowInner {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: visible;
+      min-width: 0;
+      padding: 0;
+    }
+
+    .mmapp__mobileFlowChips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 0 18px 2px 0;
+    }
+
+    .mmapp__mobileFlowChips::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mmapp__mobileStep {
+      flex: 0 0 auto;
+      font-size: 11px;
+      line-height: 1;
+      padding: 8px 11px;
+      white-space: nowrap;
+    }
+
+    .mmapp__mobileSelections {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .mmapp__mobileSelection {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(0,0,0,.12);
+      background: #fff;
+      color: #111;
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .mmapp__mobileSelection[data-filled="true"] {
+      border-color: rgba(0,0,0,.24);
+      background: #fafafa;
+    }
+
+    .mmapp__mobileSelectionLabel {
+      display: block;
+      font-size: 10px;
+      line-height: 1.1;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      opacity: .7;
+      margin-bottom: 3px;
+    }
+
+    .mmapp__mobileSelectionValue {
+      display: block;
+      font-size: 12px;
+      line-height: 1.2;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mmapp__controls {
+      gap: 8px;
+      margin: 6px 0 8px;
+      flex-wrap: wrap;
+    }
+
+    .mmapp__layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "aside"
+        "left";
+      gap: 10px;
+    }
+
+    .mmapp__left {
+      grid-area: left;
+    }
+
+    .mmapp__aside {
+      grid-area: aside;
+      position: static;
+      top: auto;
+      z-index: auto;
+      max-height: none;
+      overflow: visible;
+      padding: 9px;
+      border-radius: 10px;
+    }
+
+    .mmapp__asideTitle {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .mmapp__picked {
+      gap: 7px;
+      padding: 7px 0;
+    }
+
+    .mmapp__pickedImg {
+      width: 46px;
+      height: 46px;
+      border-radius: 7px;
+    }
+
+    .mmapp__pickedLabelLink {
+      font-size: 14px;
+    }
+
+    .mmapp__pickedName,
+    .mmapp__pickedSize {
+      font-size: 11px;
+    }
+
+    .mmapp__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mmapp__item {
+      border-radius: 9px;
+    }
+
+    .mmapp__imgWrap {
+      padding-top: 128%;
+    }
+
+    .mmapp__body {
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .mmapp__name {
+      font-size: 13px;
+      line-height: 1.15;
+      min-height: calc(1.15em * 2 + 3px);
+      max-height: calc(1.15em * 2 + 3px);
+    }
+
+    .mmapp__price {
+      font-size: 12px;
+      line-height: 1.15;
+    }
+
+    .mmapp__helper {
+      font-size: 11px;
+      line-height: 1.15;
+      min-height: calc(1.15em * 2 + 2px);
+      max-height: calc(1.15em * 2 + 2px);
+    }
+
+    .mmapp__detailsRow {
+      margin: 0 0 3px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .mmapp__detailsLeft,
+    .mmapp__detailsRight {
+      gap: 6px;
+    }
+
+    .mmapp__detailsLink {
+      font-size: 11px;
+    }
+
+    .mmapp__swatches {
+      padding: 1px 1px 4px;
+      min-height: 58px;
+      max-height: 58px;
+      margin: -3px 0 0 -3px;
+    }
+
+    .mmapp__swatches > .mmapp__swatch {
+      margin: 3px 0 0 3px;
+    }
+
+    .mmapp__swatch {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      max-width: 24px;
+      min-height: 24px;
+      max-height: 24px;
+      flex: 0 0 24px;
+    }
+
+    .mmapp__swatch img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    
+    .mmapp__select {
+      font-size: 12px;
+      padding: 7px 9px;
+      border-radius: 7px;
+      min-height: 38px;
+    }
+
+    .mmapp__btn {
+      font-size: 12px;
+      padding: 7px 9px;
+      border-radius: 7px;
+      min-height: 38px;
+    }
+
+    .mmapp__summary {
+      margin-top: 12px;
+      padding-top: 10px;
+    }
+
+    .mmapp__h3 {
+      font-size: 16px;
+    }
+
+    .mmapp__summaryList {
+      font-size: 13px;
+    }
+
+    .mmapp__fineprint {
+      font-size: 11px;
+    }
+
+    .mmapp__filters {
+      padding: 8px;
+      margin: 0 0 8px;
+      border-radius: 10px;
+    }
+
+    .mmapp__filtersRow {
+      gap: 8px;
+    }
+
+    .mmapp__filterLabel {
+      min-width: 130px;
+      flex: 1 1 130px;
+    }
+
+    .mmapp__filterLabel span {
+      font-size: 12px;
+      line-height: 14px;
+    }
+
+    .mmapp__filters .mmapp__select {
+      height: 40px;
+      min-height: 40px;
+    }
+
+    #mmClearFilters,
+    #mmClearFilters.mmapp__btn,
+    #mmClearFilters.mmapp__btn--ghost {
+      height: 40px;
+      min-height: 40px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .mmapp__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mmapp__imgWrap {
+      padding-top: 122%;
+    }
+
+    .mmapp__filters {
+      padding: 8px;
+      margin: 0 0 8px;
+    }
+
+    .mmapp__filtersRow {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      flex-wrap: nowrap;
+      gap: 7px;
+    }
+
+    .mmapp__filtersRow > * {
+      width: 100%;
+      min-width: 0;
+      margin: 0 !important;
+      flex: 0 0 auto !important;
+    }
+
+    .mmapp__filterLabel {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      width: 100%;
+      flex: 0 0 auto !important;
+    }
+
+    .mmapp__filterLabel span {
+      font-size: 11px;
+      line-height: 13px;
+      margin: 0;
+      min-height: 0;
+      display: block;
+    }
+
+    .mmapp__filterLabel--action {
+      gap: 0;
+    }
+
+    .mmapp__filterLabel--action > span {
+      display: none !important;
+    }
+
+    .mmapp__filters .mmapp__select {
+      height: 38px;
+      min-height: 38px;
+      margin: 0 !important;
+      padding: 0 10px;
+    }
+
+    #mmClearFilters,
+    #mmClearFilters.mmapp__btn,
+    #mmClearFilters.mmapp__btn--ghost {
+      width: 100%;
+      height: 38px;
+      min-height: 38px;
+      margin: 0 !important;
+      padding: 0 10px !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch;
+      flex: 0 0 auto !important;
+    }
+  }
+</style>
+
+<script>
+(() => {
+  "use strict";
+
+  /* safari only patch for desktop */
+  function mmIsDesktopSafari() {
+    const ua = navigator.userAgent || "";
+    const isSafari = /Safari/i.test(ua) && !/Chrome|CriOS|Chromium|Edg|OPR|Firefox|FxiOS|Android/i.test(ua);
+    const isMac = /Macintosh|Mac OS X/i.test(ua);
+    const isTouchApple = /iPhone|iPad|iPod/i.test(ua);
+    return !!(isSafari && isMac && !isTouchApple);
+  }
+
+  if (mmIsDesktopSafari()) {
+    document.documentElement.classList.add("mm-desktop-safari");
+  }
+
+
+  /* end safari only patch desktop */
+
+  function mmIsOldIOSWebKit() {
+    const ua = navigator.userAgent || "";
+    const isiPhoneOrIPad = /iPhone|iPad|iPod/i.test(ua);
+    const isWebKit = /AppleWebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+    const m = ua.match(/OS (\d+)_/i);
+    const major = m ? parseInt(m[1], 10) : null;
+    return !!(isiPhoneOrIPad && isWebKit && major && major <= 14);
+  }
+
+  const MM_OLD_IOS_WEBKIT = mmIsOldIOSWebKit();
+
+  function mmSetStickyTopVar() {
+    const fixed = document.querySelector(".header.header-fixed--true, .header-fixed--true");
+    const EXTRA = 35;
+    const FALLBACK = 180;
+
+    let px = FALLBACK;
+    if (fixed && fixed.getBoundingClientRect) {
+      const r = fixed.getBoundingClientRect();
+      const bottom = r.bottom > 0 ? r.bottom : 0;
+      px = Math.max(0, Math.round(bottom + EXTRA));
+    }
+    document.documentElement.style.setProperty("--mm-sticky-top", px + "px");
+  }
+
+  let mmStickyTopRaf = 0;
+
+  function mmScheduleStickyTopVar() {
+    if (mmStickyTopRaf) return;
+    mmStickyTopRaf = requestAnimationFrame(function() {
+      mmStickyTopRaf = 0;
+      mmSetStickyTopVar();
+    });
+  }
+
+  mmSetStickyTopVar();
+  window.addEventListener("resize", mmScheduleStickyTopVar, { passive: true });
+
+  try {
+    const fixed = document.querySelector(".header.header-fixed--true, .header-fixed--true");
+    if (fixed && "ResizeObserver" in window) {
+      new ResizeObserver(function() {
+        mmScheduleStickyTopVar();
+      }).observe(fixed);
+    }
+  } catch (_) {}
+
+  function mmDelay(ms) {
+    return new Promise(function(resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function fetchWithTimeout(url, options, timeoutMs) {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const finalOptions = Object.assign({}, options || {});
+    let timer = null;
+
+    try {
+      if (controller) {
+        finalOptions.signal = controller.signal;
+        timer = setTimeout(function() {
+          try {
+            controller.abort();
+          } catch (_) {}
+        }, timeoutMs || 12000);
+      }
+
+      return await fetch(url, finalOptions);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  async function fetchJsonWithRetry(url, options, retries) {
+    let lastErr = null;
+    const maxRetries = typeof retries === "number" ? retries : 2;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetchWithTimeout(url, options, 12000);
+        if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+        return await res.json();
+      } catch (err) {
+        lastErr = err;
+        if (attempt < maxRetries) {
+          await mmDelay(450 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastErr;
+  }
+
+  async function fetchTextWithRetry(url, options, retries) {
+    let lastErr = null;
+    const maxRetries = typeof retries === "number" ? retries : 1;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetchWithTimeout(url, options, 12000);
+        if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+        return await res.text();
+      } catch (err) {
+        lastErr = err;
+        if (attempt < maxRetries) {
+          await mmDelay(350 * (attempt + 1));
+        }
+      }
+    }
+
+    throw lastErr;
+  }
+
+  async function fetchPageContentHtml(path) {
+    const htmlText = await fetchTextWithRetry(path, { credentials: "same-origin" }, 1);
+    const doc = new DOMParser().parseFromString(htmlText, "text/html");
+
+    const container =
+      doc.querySelector(".sixteen.columns.page.clearfix") ||
+      doc.querySelector("#MainContent .sixteen.columns.page.clearfix");
+
+    if (!container) {
+      const fallback =
+        doc.querySelector("#MainContent .rte") ||
+        doc.querySelector(".rte") ||
+        doc.querySelector("#MainContent") ||
+        doc.querySelector("main") ||
+        doc.body;
+      return fallback ? fallback.innerHTML : htmlText;
+    }
+
+    const h1 = container.querySelector("h1");
+    const divider = container.querySelector(".feature_divider");
+    if (h1) h1.remove();
+    if (divider) divider.remove();
+    return container.innerHTML;
+  }
+
+  const CONFIG = {
+    ROLLUP_VARIANT_ID: 47085025231026,
+    ROLLUP_UPC: "77777771",
+    STEPS: [
+      { key: "top", label: "Top", collectionHandle: "top_mix_match" },
+      { key: "bottom", label: "Bottom", collectionHandle: "bottom_mix_match" },
+      { key: "sports_bra", label: "Sports bra", collectionHandle: "sports_bra_mix_match" }
+    ],
+    PROPERTIES: {
+      product_collection_value: "mix_and_match",
+      raw_skus_key: "raw_skus",
+      product_collection_key: "product_collection"
+    },
+    COLLECTION_LIMIT: 250,
+    COLOR_OPTION_MATCH: ["color", "colour"],
+    SIZE_OPTION_MATCH: ["size"],
+    SWATCH: {
+      BASE_URL: "https://cdn.shopify.com/s/files/1/0019/2672/5691/files/",
+      EXT: "png",
+      SIZE: 26
+    },
+    COLOR_ORDER: [
+      "Black", "White", "Red", "Blue", "Green",
+      "Pink", "Yellow", "Orange", "Purple", "Gray", "Brown"
+    ],
+    METAFIELD_BATCH_SIZE: 6
+  };
+
+  /* old config
+  const CONFIG = {
+    ROLLUP_VARIANT_ID: 47085025231026,
+    STEPS: [
+      { key: "top", label: "Top", collectionHandle: "top_mix_match" },
+      { key: "bottom", label: "Bottom", collectionHandle: "bottom_mix_match" },
+      { key: "sports_bra", label: "Sports bra", collectionHandle: "sports_bra_mix_match" }
+    ],
+    PROPERTIES: {
+      product_collection_value: "mix_and_match",
+      raw_skus_key: "raw_skus",
+      product_collection_key: "product_collection"
+    },
+    COLLECTION_LIMIT: 250,
+    COLOR_OPTION_MATCH: ["color", "colour"],
+    SIZE_OPTION_MATCH: ["size"],
+    SWATCH: {
+      BASE_URL: "https://cdn.shopify.com/s/files/1/0019/2672/5691/files/",
+      EXT: "png",
+      SIZE: 26
+    },
+    COLOR_ORDER: [
+      "Black", "White", "Red", "Blue", "Green",
+      "Pink", "Yellow", "Orange", "Purple", "Gray", "Brown"
+    ],
+    METAFIELD_BATCH_SIZE: 6
+  }; */
+
+  const root = document.getElementById("mix-match-app");
+  const stepLabelEl = document.getElementById("mmStepLabel");
+  const gridEl = document.getElementById("mmGrid");
+  const statusEl = document.getElementById("mmStatus");
+  const backBtn = document.getElementById("mmBackBtn");
+  const resetBtn = document.getElementById("mmResetBtn");
+  const summaryEl = document.getElementById("mmSummary");
+  const summaryListEl = document.getElementById("mmSummaryList");
+  const addToCartBtn = document.getElementById("mmAddToCartBtn");
+  const asideEl = document.getElementById("mmAside");
+  const asideListEl = document.getElementById("mmAsideList");
+  const filtersEl = document.getElementById("mmFilters");
+  const filterColorEl = document.getElementById("mmFilterColor");
+  const filterSizeEl = document.getElementById("mmFilterSize");
+  const clearFiltersBtn = document.getElementById("mmClearFilters");
+  const mobileFlowEl = document.getElementById("mmMobileFlow");
+  const mobileFlowInnerEl = document.getElementById("mmMobileFlowInner");
+
+  if (
+    !root || !gridEl || !stepLabelEl || !statusEl ||
+    !backBtn || !resetBtn || !summaryEl || !summaryListEl || !addToCartBtn
+  ) {
+    return;
+  }
+
+  const metafieldProductCache = new Map();
+  const collectionCache = new Map();
+  const enrichedStepCache = new Map();
+  const MM_STATE_STORAGE_KEY = "mmapp_state_v1";
+
+  function mmSerializableState() {
+    return {
+      stepIndex: state.stepIndex,
+      selections: Array.isArray(state.selections) ? state.selections : [],
+      filters: state.filters || {
+        top: { color: "", size: "" },
+        bottom: { color: "", size: "" },
+        sports_bra: { color: "", size: "" }
+      }
+    };
+  }
+
+  function mmSaveState() {
+    try {
+      sessionStorage.setItem(MM_STATE_STORAGE_KEY, JSON.stringify(mmSerializableState()));
+    } catch (_) {}
+  }
+
+  function mmLoadState() {
+    try {
+      const raw = sessionStorage.getItem(MM_STATE_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+
+      if (Number.isInteger(parsed.stepIndex)) {
+        state.stepIndex = Math.max(0, Math.min(parsed.stepIndex, CONFIG.STEPS.length - 1));
+      }
+
+      if (Array.isArray(parsed.selections)) {
+        state.selections = parsed.selections.filter(function(sel) {
+          return sel && sel.stepKey && sel.variantId;
+        });
+      }
+
+      if (parsed.filters && typeof parsed.filters === "object") {
+        state.filters = {
+          top: Object.assign({ color: "", size: "" }, parsed.filters.top || {}),
+          bottom: Object.assign({ color: "", size: "" }, parsed.filters.bottom || {}),
+          sports_bra: Object.assign({ color: "", size: "" }, parsed.filters.sports_bra || {})
+        };
+      }
+    } catch (_) {}
+  }
+
+  function mmClearSavedState() {
+    try {
+      sessionStorage.removeItem(MM_STATE_STORAGE_KEY);
+    } catch (_) {}
+  }
+
+  const state = {
+    stepIndex: 0,
+    selections: [],
+    fullProductCacheByHandle: new Map(),
+    loading: false,
+    filters: {
+      top: { color: "", size: "" },
+      bottom: { color: "", size: "" },
+      sports_bra: { color: "", size: "" }
+    }
+  };
+
+  mmLoadState();
+
+  let mmRenderToken = 0;
+  let mmActiveRenderPromise = Promise.resolve();
+
+  function setStatus(msg) {
+    statusEl.textContent = msg || "";
+  }
+
+  function setLoading(on) {
+    state.loading = !!on;
+    backBtn.disabled = state.stepIndex === 0 || state.loading;
+    resetBtn.disabled = state.loading;
+    addToCartBtn.disabled = state.loading || (state.selections.length !== CONFIG.STEPS.length);
+  }
+
+  function currentStep() {
+    return CONFIG.STEPS[state.stepIndex];
+  }
+
+  function normalize(str) {
+    return String(str || "").trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function normalizeColorKey(str) {
+    return normalize(str);
+  }
+
+  function titleCaseColor(str) {
+    const s = String(str || "").trim();
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+
+  function colorSortIndex(color) {
+    const idx = CONFIG.COLOR_ORDER.findIndex(function(c) {
+      return normalize(c) === normalize(color);
+    });
+    return idx === -1 ? 999 : idx;
+  }
+
+  function canonicalFilterColor(str) {
+    const raw = titleCaseColor(str);
+    if (!raw) return "";
+    const match = CONFIG.COLOR_ORDER.find(function(c) {
+      return normalize(c) === normalize(raw);
+    });
+    return match || raw;
+  }
+
+  function getStickyTopPx() {
+    return parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue("--mm-sticky-top"),
+      10
+    ) || 0;
+  }
+
+  function scrollToGridTop() {
+    const y = gridEl.getBoundingClientRect().top + window.scrollY - getStickyTopPx() - 12;
+    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+  }
+
+  function scrollToSummaryTarget() {
+    const mobile = window.matchMedia("(max-width: 959.98px)").matches;
+    const targetEl = mobile ? asideEl : summaryEl;
+    if (!targetEl) return;
+
+    const y = targetEl.getBoundingClientRect().top + window.scrollY - getStickyTopPx() - 12;
+    window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+  }
+
+  let mmQueuedRenderOptions = {};
+  let mmRenderScheduled = false;
+
+  function queueRender(options) {
+    mmQueuedRenderOptions = Object.assign(mmQueuedRenderOptions, options || {});
+
+    if (mmRenderScheduled) return mmActiveRenderPromise;
+
+    mmRenderScheduled = true;
+    mmActiveRenderPromise = Promise.resolve().then(function() {
+      mmRenderScheduled = false;
+      const opts = mmQueuedRenderOptions;
+      mmQueuedRenderOptions = {};
+      return render(opts);
+    }).catch(function(err) {
+      console.error("MMAPP queued render failure", err);
+    });
+
+    return mmActiveRenderPromise;
+  }
+
+  async function jumpToStep(stepKey) {
+    const idx = CONFIG.STEPS.findIndex(function(s) {
+      return s.key === stepKey;
+    });
+    if (idx < 0) return;
+    state.stepIndex = idx;
+    mmSaveState();
+    await queueRender({ scrollToTop: true });
+  }
+
+  function renderStepper() {
+    const parts = CONFIG.STEPS.map(function(s, i) {
+      const done = i < state.stepIndex;
+      const now = i === state.stepIndex;
+      return (done ? "✓" : now ? "→" : "•") + " " + s.label;
+    });
+    stepLabelEl.textContent = parts.join("   ");
+  }
+
+  function renderMobileFlow() {
+    if (!mobileFlowEl) return;
+    mobileFlowEl.hidden = true;
+    if (mobileFlowInnerEl) mobileFlowInnerEl.innerHTML = "";
+  }
+
+  function renderSummary() {
+    summaryListEl.innerHTML = "";
+    for (let i = 0; i < state.selections.length; i++) {
+      const sel = state.selections[i];
+      const li = document.createElement("li");
+      li.textContent = sel.stepLabel + ": " + sel.productTitle + " — " + sel.variantTitle;
+      summaryListEl.appendChild(li);
+    }
+    summaryEl.hidden = state.selections.length !== CONFIG.STEPS.length;
+  }
+
+  function cdnResize(url, width) {
+    if (!url) return "";
+    try {
+      const u = new URL(url, window.location.origin);
+      if (!u.searchParams.get("width")) u.searchParams.set("width", String(width));
+      return u.toString();
+    } catch (_) {
+      const joiner = url.indexOf("?") >= 0 ? "&" : "?";
+      return url.indexOf("width=") >= 0 ? url : (url + joiner + "width=" + width);
+    }
+  }
+
+  function mmCardImageUrl(url, mobileWidth, desktopWidth) {
+    if (!url) return "";
+    if (MM_OLD_IOS_WEBKIT) return url;
+
+    const width = window.matchMedia("(max-width: 959.98px)").matches
+      ? mobileWidth
+      : desktopWidth;
+
+    return cdnResize(url, width);
+  }
+
+  function mmSwatchImageUrl(url) {
+    if (!url) return "";
+    if (MM_OLD_IOS_WEBKIT) return url;
+    return cdnResize(url, 40);
+  }
+
+  async function fetchCollectionProducts(handle) {
+    if (!handle) return [];
+    if (collectionCache.has(handle)) return collectionCache.get(handle);
+
+    const url = "/collections/" + encodeURIComponent(handle) + "/products.json?limit=" + CONFIG.COLLECTION_LIMIT;
+    const data = await fetchJsonWithRetry(url, {
+      credentials: "same-origin",
+      cache: "force-cache"
+    }, 2);
+
+    const products = Array.isArray(data && data.products) ? data.products : [];
+    collectionCache.set(handle, products);
+    return products;
+  }
+
+  async function getEnrichedProductsForStep(step) {
+    if (!step || !step.key) return [];
+    if (enrichedStepCache.has(step.key)) return enrichedStepCache.get(step.key);
+
+    const products = await fetchCollectionProducts(step.collectionHandle);
+    const enrichedProducts = await enrichProductsWithMetafields(products);
+    enrichedStepCache.set(step.key, enrichedProducts);
+    return enrichedProducts;
+  }
+
+  async function fetchFullProduct(handle) {
+    if (!handle) return null;
+    if (state.fullProductCacheByHandle.has(handle)) {
+      return state.fullProductCacheByHandle.get(handle);
+    }
+
+    const data = await fetchJsonWithRetry("/products/" + encodeURIComponent(handle) + ".json", {
+      credentials: "same-origin",
+      cache: "force-cache"
+    }, 1);
+
+    const product = data && data.product ? data.product : null;
+    state.fullProductCacheByHandle.set(handle, product);
+    return product;
+  }
+
+  async function fetchProductMetafields(handle) {
+    if (!handle) return null;
+    if (metafieldProductCache.has(handle)) return metafieldProductCache.get(handle);
+
+    try {
+      const data = await fetchJsonWithRetry("/products/" + encodeURIComponent(handle) + "?view=metafields", {
+        credentials: "same-origin",
+        cache: "force-cache"
+      }, 1);
+
+      metafieldProductCache.set(handle, data);
+      return data;
+    } catch (err) {
+      console.error("Bad metafield fetch for", handle, err);
+      metafieldProductCache.set(handle, null);
+      return null;
+    }
+  }
+
+  async function enrichProductsWithMetafields(products) {
+    const list = Array.isArray(products) ? products : [];
+    const results = [];
+
+    for (let i = 0; i < list.length; i += CONFIG.METAFIELD_BATCH_SIZE) {
+      const batch = list.slice(i, i + CONFIG.METAFIELD_BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async function(product) {
+          try {
+            const meta = await fetchProductMetafields(product.handle);
+            return Object.assign({}, product, {
+              __metafields: meta && meta.variants ? meta.variants : {}
+            });
+          } catch (err) {
+            console.error("Metafield fetch failed for", product && product.handle, err);
+            return Object.assign({}, product, {
+              __metafields: {}
+            });
+          }
+        })
+      );
+
+      Array.prototype.push.apply(results, batchResults);
+    }
+
+    return results;
+  }
+
+  function optionPositionByName(product, matchList) {
+    const opts = Array.isArray(product && product.options) ? product.options : [];
+    const matches = matchList.map(normalize);
+    const found = opts.find(function(o) {
+      return matches.some(function(m) {
+        return normalize(o && o.name).indexOf(m) >= 0;
+      });
+    });
+    return found && found.position ? Number(found.position) : null;
+  }
+
+  function variantOptionValue(variant, position) {
+    if (!position) return "";
+    if (position === 1) return variant && variant.option1 ? variant.option1 : "";
+    if (position === 2) return variant && variant.option2 ? variant.option2 : "";
+    if (position === 3) return variant && variant.option3 ? variant.option3 : "";
+    return "";
+  }
+
+  function metafieldRecord(product, variantId) {
+    return product && product.__metafields ? product.__metafields[String(variantId)] || null : null;
+  }
+
+  function variantMetafieldColor(product, variantId) {
+    const rec = metafieldRecord(product, variantId);
+    return String(rec && rec.color ? rec.color : "").trim();
+  }
+
+  function variantMetafieldSize(product, variantId) {
+    const rec = metafieldRecord(product, variantId);
+    return String(rec && rec.size ? rec.size : "").trim();
+  }
+
+  function swatchVariantColor(product, variant, colorPos) {
+    const optionColor = colorPos ? variantOptionValue(variant, colorPos) : "";
+    return titleCaseColor(optionColor || "");
+  }
+
+  function handleize(str) {
+    return String(str || "")
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/['"]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function swatchUrlForColor(colorVal) {
+    const file = handleize(colorVal) + "." + CONFIG.SWATCH.EXT;
+    return CONFIG.SWATCH.BASE_URL + file;
+  }
+
+  function formatVariantLabel(v, sizePos, product) {
+    const metafieldSize = variantMetafieldSize(product, v && v.id);
+    const sizeVal = metafieldSize || (sizePos ? variantOptionValue(v, sizePos) : "");
+    return String(sizeVal || (v && v.title) || "").trim();
+  }
+
+  function imageSrcForColorFromVariants(variantsForColor) {
+    const list = Array.isArray(variantsForColor) ? variantsForColor : [];
+    for (let i = 0; i < list.length; i++) {
+      const src = list[i] && list[i].featured_image && list[i].featured_image.src;
+      if (src) return src;
+    }
+    return "";
+  }
+
+  function imagesForColor(product, colorVal) {
+    const imgs = Array.isArray(product && product.images) ? product.images : [];
+    const wanted = normalizeColorKey(colorVal);
+    return imgs.filter(function(img) {
+      return normalizeColorKey(img && img.alt ? img.alt : "") === wanted;
+    });
+  }
+
+  function dedupeSorted(values, mode) {
+    const seen = new Set();
+    const unique = [];
+
+    (values || []).forEach(function(v) {
+      const str = String(v || "").trim();
+      if (!str || seen.has(str)) return;
+      seen.add(str);
+      unique.push(str);
+    });
+
+    if (mode === "color") {
+      unique.sort(function(a, b) {
+        const ai = colorSortIndex(a);
+        const bi = colorSortIndex(b);
+        if (ai !== bi) return ai - bi;
+        return a.localeCompare(b);
+      });
+      return unique;
+    }
+
+    unique.sort(function(a, b) {
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+    return unique;
+  }
+
+  function buildFilterOptions(stepKey, products) {
+    const colors = [];
+    const sizes = [];
+
+    (products || []).forEach(function(product) {
+      const variants = Array.isArray(product && product.variants) ? product.variants : [];
+      const sizePos = optionPositionByName(product, CONFIG.SIZE_OPTION_MATCH);
+
+      variants.forEach(function(v) {
+        if (!v || v.available === false) return;
+
+        const colorVal = canonicalFilterColor(variantMetafieldColor(product, v.id));
+        const sizeVal = variantMetafieldSize(product, v.id) || variantOptionValue(v, sizePos);
+
+        if (colorVal) colors.push(colorVal);
+        if (sizeVal) sizes.push(sizeVal);
+      });
+    });
+
+    return {
+      colors: dedupeSorted(colors, "color"),
+      sizes: dedupeSorted(sizes, "size")
+    };
+  }
+
+  function populateStepFilters(stepKey, products) {
+    if (!filtersEl || !filterColorEl || !filterSizeEl || !clearFiltersBtn) return;
+
+    const opts = buildFilterOptions(stepKey, products);
+    const current = state.filters[stepKey] || { color: "", size: "" };
+
+    filterColorEl.innerHTML = '<option value="">All colors</option>';
+    opts.colors.forEach(function(color) {
+      const opt = document.createElement("option");
+      opt.value = color;
+      opt.textContent = color;
+      if (current.color === color) opt.selected = true;
+      filterColorEl.appendChild(opt);
+    });
+
+    filterSizeEl.innerHTML = '<option value="">All sizes</option>';
+    opts.sizes.forEach(function(size) {
+      const opt = document.createElement("option");
+      opt.value = size;
+      opt.textContent = size;
+      if (current.size === size) opt.selected = true;
+      filterSizeEl.appendChild(opt);
+    });
+
+    filtersEl.hidden = false;
+
+    filterColorEl.onchange = async function() {
+      state.filters[stepKey].color = filterColorEl.value;
+      mmSaveState();
+      await queueRender({ preserveScroll: true });
+    };
+
+    filterSizeEl.onchange = async function() {
+      state.filters[stepKey].size = filterSizeEl.value;
+      mmSaveState();
+      await queueRender({ preserveScroll: true });
+    };
+
+    clearFiltersBtn.onclick = async function() {
+      state.filters[stepKey] = { color: "", size: "" };
+      mmSaveState();
+      await queueRender({ preserveScroll: true });
+    };
+  }
+
+  function productMatchesStepFilters(stepKey, product) {
+    const active = state.filters[stepKey] || { color: "", size: "" };
+    if (!active.color && !active.size) return true;
+
+    const variants = Array.isArray(product && product.variants) ? product.variants : [];
+    const sizePos = optionPositionByName(product, CONFIG.SIZE_OPTION_MATCH);
+
+    return variants.some(function(v) {
+      if (!v || v.available === false) return false;
+
+      const colorVal = canonicalFilterColor(variantMetafieldColor(product, v.id));
+      const sizeVal = variantMetafieldSize(product, v.id) || variantOptionValue(v, sizePos);
+
+      const colorOk = !active.color || colorVal === active.color;
+      const sizeOk = !active.size || sizeVal === active.size;
+
+      return colorOk && sizeOk;
+    });
+  }
+
+  function filterProductsForStep(stepKey, products) {
+    return (products || []).filter(function(product) {
+      return productMatchesStepFilters(stepKey, product);
+    });
+  }
+
+  function renderAside() {
+    if (!asideEl || !asideListEl) return;
+
+    asideEl.hidden = false;
+    asideListEl.innerHTML = "";
+
+    const selByKey = new Map(
+      state.selections.map(function(s) {
+        return [s.stepKey, s];
+      })
+    );
+
+    CONFIG.STEPS.forEach(function(step) {
+      const sel = selByKey.get(step.key);
+
+      const row = document.createElement("div");
+      row.className = "mmapp__picked";
+
+      const im = document.createElement("img");
+      im.className = "mmapp__pickedImg";
+      im.loading = "eager";
+      im.decoding = "auto";
+
+      if (sel && sel.imageUrl) {
+        im.alt = sel.productTitle || step.label;
+        im.src = cdnResize(sel.imageUrl, 200);
+      } else {
+        im.alt = step.label + " not selected";
+        im.src =
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+            '<rect width="64" height="64" rx="10" ry="10" fill="rgba(0,0,0,0.06)"/>' +
+            '<text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="rgba(0,0,0,0.45)">' +
+            step.label +
+            "</text></svg>"
+          );
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "mmapp__pickedMeta";
+
+      const link = document.createElement("a");
+      link.href = "#";
+      link.className = "mmapp__pickedLabelLink";
+      link.textContent = step.label;
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        jumpToStep(step.key);
+      });
+
+      const name = document.createElement("div");
+      name.className = "mmapp__pickedName";
+      name.textContent = sel && sel.productTitle ? sel.productTitle : "Not selected yet";
+
+      const size = document.createElement("div");
+      size.className = "mmapp__pickedSize";
+      size.textContent = sel && sel.size ? "Size: " + sel.size : "";
+
+      meta.appendChild(link);
+      meta.appendChild(name);
+      if (size.textContent) meta.appendChild(size);
+
+      row.appendChild(im);
+      row.appendChild(meta);
+      asideListEl.appendChild(row);
+    });
+  }
+
+  function openDetailsModal(payload) {
+    const overlay = document.createElement("div");
+    overlay.className = "mmapp__modalOverlay";
+
+    const modal = document.createElement("div");
+    modal.className = "mmapp__modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+
+    const header = document.createElement("div");
+    header.className = "mmapp__modalHeader";
+
+    const h = document.createElement("h3");
+    h.className = "mmapp__modalTitle";
+    h.textContent = payload && payload.title ? payload.title : "Details";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "mmapp__modalClose";
+    closeBtn.textContent = "Close";
+
+    const body = document.createElement("div");
+    body.className = "mmapp__modalBody";
+    body.innerHTML = payload && payload.bodyHtml ? payload.bodyHtml : "<p>No details available.</p>";
+
+    header.appendChild(h);
+    header.appendChild(closeBtn);
+    modal.appendChild(header);
+    modal.appendChild(body);
+    overlay.appendChild(modal);
+
+    function cleanup() {
+      document.removeEventListener("keydown", onKey);
+      overlay.remove();
+    }
+
+    function onKey(e) {
+      if (e.key === "Escape") cleanup();
+    }
+
+    closeBtn.addEventListener("click", cleanup);
+    overlay.addEventListener("click", function(e) {
+      if (e.target === overlay) cleanup();
+    });
+
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+    closeBtn.focus();
+  }
+
+  function openImageGallery(payload) {
+    const galleryImages = Array.isArray(payload && payload.images) ? payload.images.filter(Boolean) : [];
+    if (!galleryImages.length) return;
+
+    let index = Math.max(0, Math.min(payload && payload.startIndex ? payload.startIndex : 0, galleryImages.length - 1));
+
+    const overlay = document.createElement("div");
+    overlay.className = "mmapp__galleryOverlay";
+
+    const gallery = document.createElement("div");
+    gallery.className = "mmapp__gallery";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "mmapp__galleryClose";
+    closeBtn.textContent = "Close";
+
+    const main = document.createElement("div");
+    main.className = "mmapp__galleryMain";
+
+    const mainImg = document.createElement("img");
+    mainImg.alt = payload && payload.title ? payload.title : "";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "mmapp__galleryNav mmapp__galleryNav--prev";
+    prevBtn.setAttribute("aria-label", "Previous image");
+    prevBtn.textContent = "‹";
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "mmapp__galleryNav mmapp__galleryNav--next";
+    nextBtn.setAttribute("aria-label", "Next image");
+    nextBtn.textContent = "›";
+
+    const caption = document.createElement("div");
+    caption.className = "mmapp__galleryCaption";
+
+    function updateGallery() {
+      const current = galleryImages[index];
+      mainImg.src = cdnResize(current && current.src ? current.src : "", 1600);
+      mainImg.alt = (current && current.alt) || (payload && payload.title) || "";
+      caption.textContent =
+        ((payload && payload.title) || "") +
+        (galleryImages.length > 1 ? " (" + (index + 1) + " of " + galleryImages.length + ")" : "");
+      prevBtn.style.display = galleryImages.length > 1 ? "" : "none";
+      nextBtn.style.display = galleryImages.length > 1 ? "" : "none";
+    }
+
+    function cleanup() {
+      document.removeEventListener("keydown", onKey);
+      overlay.remove();
+    }
+
+    function onKey(e) {
+      if (e.key === "Escape") cleanup();
+      if (e.key === "ArrowLeft" && galleryImages.length > 1) {
+        index = (index - 1 + galleryImages.length) % galleryImages.length;
+        updateGallery();
+      }
+      if (e.key === "ArrowRight" && galleryImages.length > 1) {
+        index = (index + 1) % galleryImages.length;
+        updateGallery();
+      }
+    }
+
+    prevBtn.addEventListener("click", function() {
+      index = (index - 1 + galleryImages.length) % galleryImages.length;
+      updateGallery();
+    });
+
+    nextBtn.addEventListener("click", function() {
+      index = (index + 1) % galleryImages.length;
+      updateGallery();
+    });
+
+    closeBtn.addEventListener("click", cleanup);
+    overlay.addEventListener("click", function(e) {
+      if (e.target === overlay) cleanup();
+    });
+
+    main.appendChild(mainImg);
+    main.appendChild(prevBtn);
+    main.appendChild(nextBtn);
+    gallery.appendChild(closeBtn);
+    gallery.appendChild(main);
+    gallery.appendChild(caption);
+    overlay.appendChild(gallery);
+
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+
+    updateGallery();
+    closeBtn.focus();
+  }
+
+  function variantDisplayNumber(v) {
+    const compareAt = parseFloat(v && v.compare_at_price);
+    if (Number.isFinite(compareAt) && compareAt > 0) return compareAt;
+
+    const price = parseFloat(v && v.price);
+    if (Number.isFinite(price)) return price;
+
+    return NaN;
+  }
+
+  function renderGrid(products) {
+    gridEl.innerHTML = "";
+
+    if (!Array.isArray(products) || !products.length) {
+      const empty = document.createElement("div");
+      empty.className = "mmapp__item";
+      empty.innerHTML = '<div class="mmapp__body"><p class="mmapp__helper">No products found for the current filters.</p></div>';
+      gridEl.appendChild(empty);
+      return;
+    }
+
+    products.forEach(function(product) {
+      try {
+        const availableVariants = Array.isArray(product && product.variants)
+          ? product.variants.filter(function(v) {
+              return v && v.available !== false;
+            })
+          : [];
+
+        if (!availableVariants.length) return;
+
+        const colorPos = optionPositionByName(product, CONFIG.COLOR_OPTION_MATCH);
+        const sizePos = optionPositionByName(product, CONFIG.SIZE_OPTION_MATCH);
+
+        const colorToVariants = new Map();
+        availableVariants.forEach(function(v) {
+          const c = swatchVariantColor(product, v, colorPos);
+          if (!c) return;
+          if (!colorToVariants.has(c)) colorToVariants.set(c, []);
+          colorToVariants.get(c).push(v);
+        });
+
+        const uniqueColors = Array.from(colorToVariants.keys()).sort(function(a, b) {
+          const ai = colorSortIndex(a);
+          const bi = colorSortIndex(b);
+          if (ai !== bi) return ai - bi;
+          return a.localeCompare(b);
+        });
+
+        const showSwatches = uniqueColors.length > 0;
+
+        const card = document.createElement("div");
+        card.className = "mmapp__item";
+
+        const imgWrap = document.createElement("div");
+        imgWrap.className = "mmapp__imgWrap";
+
+        const img = document.createElement("img");
+        img.className = "mmapp__img";
+        img.alt = product && product.title ? product.title : "";
+        img.loading = "eager";
+        img.decoding = MM_OLD_IOS_WEBKIT ? "auto" : "async";
+        img.referrerPolicy = "no-referrer-when-downgrade";
+
+        const fallbackSrc =
+          (typeof (product && product.image) === "string" ? product.image : (product && product.image && product.image.src)) ||
+          (product && product.images && product.images[0] && product.images[0].src) ||
+          (availableVariants[0] && availableVariants[0].featured_image && availableVariants[0].featured_image.src) ||
+          "";
+
+        img.src = mmCardImageUrl(fallbackSrc, 520, 760);
+        img.onerror = function() {
+          if (!fallbackSrc) return;
+
+          const rawSrc = fallbackSrc;
+          const resizedSrc = mmCardImageUrl(fallbackSrc, 520, 760);
+
+          if (img.src !== rawSrc) {
+            img.src = rawSrc;
+            return;
+          }
+
+          if (img.src !== resizedSrc) {
+            img.src = resizedSrc;
+          }
+        };
+
+        imgWrap.appendChild(img);
+
+        const body = document.createElement("div");
+        body.className = "mmapp__body";
+
+        const name = document.createElement("h4");
+        name.className = "mmapp__name";
+        name.textContent = product && product.title ? product.title : "Untitled";
+
+        const priceP = document.createElement("p");
+        priceP.className = "mmapp__price";
+
+        function setDisplayedPriceFromVariants(variantsForPrice) {
+          const values = (variantsForPrice || [])
+            .map(variantDisplayNumber)
+            .filter(function(n) {
+              return Number.isFinite(n);
+            })
+            .sort(function(a, b) {
+              return a - b;
+            });
+
+          if (!values.length) {
+            priceP.textContent = "";
+            return;
+          }
+
+          const min = values[0];
+          const max = values[values.length - 1];
+
+          priceP.textContent = min === max
+            ? "$" + min.toFixed(2)
+            : "$" + min.toFixed(2) + " – $" + max.toFixed(2);
+        }
+
+        function setDisplayedPriceFromVariant(variant) {
+          const n = variantDisplayNumber(variant);
+          priceP.textContent = Number.isFinite(n) ? "$" + n.toFixed(2) : "";
+        }
+
+        const detailsRow = document.createElement("div");
+        detailsRow.className = "mmapp__detailsRow";
+
+        const leftWrap = document.createElement("div");
+        leftWrap.className = "mmapp__detailsLeft";
+
+        const rightWrap = document.createElement("div");
+        rightWrap.className = "mmapp__detailsRight";
+
+        const sizeGuideLink = document.createElement("a");
+        sizeGuideLink.href = "#";
+        sizeGuideLink.className = "mmapp__detailsLink";
+        sizeGuideLink.textContent = "Size guide";
+        sizeGuideLink.addEventListener("click", async function(e) {
+          e.preventDefault();
+          if (state.loading) return;
+
+          try {
+            sizeGuideLink.textContent = "Loading…";
+            const bodyHtml = await fetchPageContentHtml("/pages/size-guides");
+            openDetailsModal({ title: "Size guide", bodyHtml: bodyHtml });
+          } catch (err) {
+            console.error(err);
+            alert("Couldn’t load size guide.");
+          } finally {
+            sizeGuideLink.textContent = "Size guide";
+          }
+        });
+        leftWrap.appendChild(sizeGuideLink);
+
+        const detailsLink = document.createElement("a");
+        detailsLink.href = "#";
+        detailsLink.className = "mmapp__detailsLink";
+        detailsLink.textContent = "Details";
+        detailsLink.addEventListener("click", function(e) {
+          e.preventDefault();
+          if (state.loading) return;
+          openDetailsModal({
+            title: (product && product.title) || "Details",
+            bodyHtml: (product && product.body_html) || ""
+          });
+        });
+        rightWrap.appendChild(detailsLink);
+
+        detailsRow.appendChild(leftWrap);
+        detailsRow.appendChild(rightWrap);
+
+        const helperP = document.createElement("p");
+        helperP.className = "mmapp__helper";
+
+        const chosenColorEl = document.createElement("span");
+        chosenColorEl.className = "mmapp__chosenColor";
+
+        const swatchesWrap = document.createElement("div");
+        swatchesWrap.className = "mmapp__swatches";
+
+        const select = document.createElement("select");
+        select.className = "mmapp__select";
+
+        const chooseBtn = document.createElement("button");
+        chooseBtn.type = "button";
+        chooseBtn.className = "mmapp__btn mmapp__btn--primary";
+        chooseBtn.textContent = "Select";
+        chooseBtn.disabled = true;
+
+        function populateSelect(variantsForUI) {
+          select.innerHTML = '<option value="">Select a size…</option>';
+
+          (variantsForUI || []).forEach(function(v) {
+            const opt = document.createElement("option");
+            opt.value = String(v.id);
+
+            const sizeVal = variantMetafieldSize(product, v.id) || (sizePos ? variantOptionValue(v, sizePos) : "");
+            const colorVal = swatchVariantColor(product, v, colorPos);
+
+            opt.textContent = formatVariantLabel(v, sizePos, product);
+            opt.dataset.sku = v && v.sku ? v.sku : "";
+            opt.dataset.variantTitle = v && v.title ? v.title : "";
+            opt.dataset.price = v && v.price ? v.price : "";
+            opt.dataset.compareAtPrice = v && v.compare_at_price ? v.compare_at_price : "";
+            opt.dataset.size = String(sizeVal || "").trim();
+            opt.dataset.color = colorVal;
+
+            select.appendChild(opt);
+          });
+
+          chooseBtn.disabled = true;
+        }
+
+        let selectedColor = "";
+        let selectedColorImages = Array.isArray(product && product.images) ? product.images : [];
+        let fullProductPromise = null;
+
+        async function ensureGalleryImages(colorVal, variantsForColor) {
+          const baseProduct = await (fullProductPromise || (fullProductPromise = fetchFullProduct(product.handle)));
+          const galleryProduct = baseProduct || product;
+
+          let galleryImages = imagesForColor(galleryProduct, colorVal);
+
+          if (!galleryImages.length && Array.isArray(galleryProduct && galleryProduct.images)) {
+            const wanted = normalizeColorKey(colorVal);
+            const variantIds = new Set(
+              (variantsForColor || []).map(function(v) {
+                return Number(v.id);
+              }).filter(Boolean)
+            );
+
+            galleryImages = galleryProduct.images.filter(function(imgObj) {
+              const altMatch = normalizeColorKey(imgObj && imgObj.alt ? imgObj.alt : "") === wanted;
+              const ids = Array.isArray(imgObj && imgObj.variant_ids) ? imgObj.variant_ids.map(Number) : [];
+              const variantMatch = ids.some(function(id) {
+                return variantIds.has(id);
+              });
+              return altMatch || variantMatch;
+            });
+          }
+
+          return galleryImages;
+        }
+
+        async function applyColor(colorVal, setExactPrice) {
+          selectedColor = colorVal;
+          chosenColorEl.textContent = " " + colorVal;
+
+          Array.prototype.forEach.call(swatchesWrap.children, function(child) {
+            if (child && child.classList && child.classList.contains("mmapp__swatch")) {
+              child.setAttribute("aria-pressed", String(child.dataset.color === selectedColor));
+            }
+          });
+
+          const vs = colorToVariants.get(selectedColor) || [];
+          populateSelect(vs);
+
+          try {
+            selectedColorImages = await ensureGalleryImages(colorVal, vs);
+          } catch (err) {
+            console.error(err);
+            selectedColorImages = [];
+          }
+
+          const firstMatchingGalleryImage = selectedColorImages[0] && selectedColorImages[0].src ? selectedColorImages[0].src : "";
+          const variantImage = imageSrcForColorFromVariants(vs);
+          const nextBaseSrc = firstMatchingGalleryImage || variantImage || fallbackSrc || "";
+          const nextSrc = mmCardImageUrl(nextBaseSrc, 520, 760);
+
+          if (nextSrc) img.src = nextSrc;
+
+          if (vs.length) {
+            const firstVariant = vs[0];
+            select.value = String(firstVariant.id);
+            chooseBtn.disabled = false;
+
+            if (setExactPrice) {
+              setDisplayedPriceFromVariant(firstVariant);
+            } else {
+              setDisplayedPriceFromVariants(vs);
+            }
+          } else {
+            select.value = "";
+            chooseBtn.disabled = true;
+            setDisplayedPriceFromVariants(availableVariants);
+          }
+        }
+
+        imgWrap.addEventListener("click", async function() {
+          let galleryImages = [];
+
+          if (showSwatches) {
+            const vs = colorToVariants.get(selectedColor) || [];
+            try {
+              galleryImages = await ensureGalleryImages(selectedColor, vs);
+              selectedColorImages = galleryImages;
+            } catch (err) {
+              console.error(err);
+              galleryImages = Array.isArray(selectedColorImages) ? selectedColorImages : [];
+            }
+          } else {
+            try {
+              const fullProduct = await (fullProductPromise || (fullProductPromise = fetchFullProduct(product.handle)));
+              galleryImages = Array.isArray(fullProduct && fullProduct.images) && fullProduct.images.length
+                ? fullProduct.images
+                : (Array.isArray(product && product.images) ? product.images : []);
+            } catch (err) {
+              console.error(err);
+              galleryImages = Array.isArray(product && product.images) ? product.images : [];
+            }
+          }
+
+          if (!galleryImages.length) return;
+
+          const currentSrc = img.currentSrc || img.src || "";
+          let startIndex = galleryImages.findIndex(function(imageObj) {
+            const full = cdnResize(imageObj && imageObj.src ? imageObj.src : "", 1100);
+            return full === currentSrc || ((imageObj && imageObj.src) || "") === currentSrc;
+          });
+
+          if (startIndex < 0) startIndex = 0;
+
+          openImageGallery({
+            title: showSwatches ? ((product && product.title) || "") + " — " + (selectedColor || "") : ((product && product.title) || ""),
+            images: galleryImages,
+            startIndex: startIndex
+          });
+        });
+
+        if (showSwatches) {
+          helperP.textContent = "Choose a colorway:";
+          helperP.appendChild(chosenColorEl);
+
+          uniqueColors.forEach(function(colorVal, index) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "mmapp__swatch";
+            btn.dataset.color = colorVal;
+            btn.title = colorVal;
+            btn.setAttribute("aria-label", colorVal);
+            btn.setAttribute("aria-pressed", String(index === 0));
+
+            const swImg = document.createElement("img");
+            swImg.width = CONFIG.SWATCH.SIZE;
+            swImg.height = CONFIG.SWATCH.SIZE;
+            swImg.alt = colorVal;
+            swImg.loading = "eager";
+            swImg.decoding = MM_OLD_IOS_WEBKIT ? "auto" : "async";
+            swImg.src = mmSwatchImageUrl(swatchUrlForColor(colorVal));
+
+            swImg.onerror = function() {
+              if (swImg.parentNode) swImg.remove();
+              const fallback = document.createElement("span");
+              fallback.textContent = colorVal;
+              fallback.style.fontSize = "10px";
+              fallback.style.padding = "0 4px";
+              fallback.style.textAlign = "center";
+              btn.appendChild(fallback);
+            };
+
+            btn.appendChild(swImg);
+            btn.addEventListener("click", function() {
+              if (state.loading) return;
+              applyColor(colorVal, true);
+            });
+
+            swatchesWrap.appendChild(btn);
+          });
+
+          body.appendChild(name);
+          body.appendChild(priceP);
+          body.appendChild(detailsRow);
+          body.appendChild(helperP);
+          body.appendChild(swatchesWrap);
+          body.appendChild(select);
+          body.appendChild(chooseBtn);
+
+          card.appendChild(imgWrap);
+          card.appendChild(body);
+
+          populateSelect(colorToVariants.get(uniqueColors[0]) || []);
+          setDisplayedPriceFromVariants(colorToVariants.get(uniqueColors[0]) || availableVariants);
+          applyColor(uniqueColors[0], false);
+        } else {
+          helperP.textContent = "Select a size:";
+          populateSelect(availableVariants);
+          setDisplayedPriceFromVariants(availableVariants);
+
+          body.appendChild(name);
+          body.appendChild(priceP);
+          body.appendChild(detailsRow);
+          body.appendChild(helperP);
+          body.appendChild(select);
+          body.appendChild(chooseBtn);
+
+          card.appendChild(imgWrap);
+          card.appendChild(body);
+
+          if (availableVariants.length) {
+            select.value = String(availableVariants[0].id);
+            chooseBtn.disabled = false;
+            setDisplayedPriceFromVariant(availableVariants[0]);
+          }
+        }
+
+        select.addEventListener("change", function() {
+          const variantId = Number(select.value);
+          const selectedVariant =
+            availableVariants.find(function(v) {
+              return Number(v.id) === variantId;
+            }) ||
+            (selectedColor
+              ? (colorToVariants.get(selectedColor) || []).find(function(v) {
+                  return Number(v.id) === variantId;
+                })
+              : null);
+
+          chooseBtn.disabled = !variantId;
+
+          if (selectedVariant) {
+            setDisplayedPriceFromVariant(selectedVariant);
+
+            const variantImage = selectedVariant && selectedVariant.featured_image && selectedVariant.featured_image.src
+              ? selectedVariant.featured_image.src
+              : "";
+
+            if (variantImage) {
+              img.src = mmCardImageUrl(variantImage, 520, 760);
+            }
+          }
+        });
+
+        chooseBtn.addEventListener("click", async function() {
+          if (state.loading) return;
+
+          const step = currentStep();
+          const opt = select.selectedOptions && select.selectedOptions[0] ? select.selectedOptions[0] : null;
+          const variantId = Number(select.value);
+          const sku = opt && opt.dataset ? (opt.dataset.sku || "") : "";
+
+          if (!variantId) return;
+          if (!sku) {
+            alert("This variant has no SKU. Please pick a different variant.");
+            return;
+          }
+
+          const selection = {
+            stepKey: step.key,
+            stepLabel: step.label,
+            productHandle: product && product.handle ? product.handle : "",
+            productTitle: product && product.title ? product.title : "",
+            variantId: variantId,
+            variantTitle: opt && opt.dataset ? (opt.dataset.variantTitle || "") : "",
+            sku: sku,
+            imageUrl: img.src || fallbackSrc || "",
+            price: opt && opt.dataset ? (opt.dataset.price || "") : "",
+            size: opt && opt.dataset ? (opt.dataset.size || "") : "",
+            color: opt && opt.dataset ? (opt.dataset.color || selectedColor || "") : (selectedColor || "")
+          };
+
+          state.selections = state.selections.filter(function(s) {
+            return s.stepKey !== step.key;
+          });
+          state.selections.push(selection);
+
+          const order = new Map(
+            CONFIG.STEPS.map(function(s, i) {
+              return [s.key, i];
+            })
+          );
+
+          state.selections.sort(function(a, b) {
+            const ai = order.has(a.stepKey) ? order.get(a.stepKey) : 999;
+            const bi = order.has(b.stepKey) ? order.get(b.stepKey) : 999;
+            return ai - bi;
+          });
+
+          mmSaveState();
+
+          renderAside();
+          renderMobileFlow();
+          renderSummary();
+
+          if (state.stepIndex < CONFIG.STEPS.length - 1) {
+            state.stepIndex += 1;
+            mmSaveState();
+            await queueRender({ scrollToTop: true });
+          } else {
+            mmSaveState();
+            await queueRender({ scrollToSummary: true });
+          }
+        });
+
+        gridEl.appendChild(card);
+      } catch (err) {
+        console.error("FAILED PRODUCT:", product && product.title, product && product.handle, err);
+      }
+    });
+  }
+
+  async function render(options) {
+    const opts = options || {};
+    const scrollToTop = !!opts.scrollToTop;
+    const scrollToSummary = !!opts.scrollToSummary;
+    const preserveScroll = !!opts.preserveScroll;
+
+    const myToken = ++mmRenderToken;
+    const step = currentStep();
+
+    renderStepper();
+    renderSummary();
+    renderAside();
+    renderMobileFlow();
+
+    setStatus("Loading " + step.label + " options…");
+    setLoading(true);
+
+    const beforeScrollY = preserveScroll ? window.scrollY : null;
+
+    try {
+      const enrichedProducts = await getEnrichedProductsForStep(step);
+      if (myToken !== mmRenderToken) return;
+
+      const products = enrichedProducts;
+
+      populateStepFilters(step.key, enrichedProducts);
+      if (myToken !== mmRenderToken) return;
+
+      const filteredProducts = filterProductsForStep(step.key, enrichedProducts);
+      if (myToken !== mmRenderToken) return;
+
+      setStatus(
+        "Step " + (state.stepIndex + 1) +
+        " of " + CONFIG.STEPS.length +
+        ": Choose a " + step.label.toLowerCase() +
+        " (" + filteredProducts.length + " shown of " + products.length + ")"
+      );
+
+      renderGrid(filteredProducts);
+      if (myToken !== mmRenderToken) return;
+
+      if (preserveScroll && beforeScrollY !== null) {
+        requestAnimationFrame(function() {
+          if (myToken !== mmRenderToken) return;
+          window.scrollTo({ top: beforeScrollY, behavior: "auto" });
+        });
+      } else if (scrollToTop) {
+        requestAnimationFrame(function() {
+          if (myToken !== mmRenderToken) return;
+          scrollToGridTop();
+        });
+      } else if (scrollToSummary) {
+        requestAnimationFrame(function() {
+          if (myToken !== mmRenderToken) return;
+          scrollToSummaryTarget();
+        });
+      }
+    } catch (err) {
+      console.error("MMAPP render failed", err);
+      if (myToken !== mmRenderToken) return;
+
+      gridEl.innerHTML = "";
+      const empty = document.createElement("div");
+      empty.className = "mmapp__item";
+      empty.innerHTML = '<div class="mmapp__body"><p class="mmapp__helper">Couldn’t load products. Please try again.</p></div>';
+      gridEl.appendChild(empty);
+      setStatus("We hit a loading problem on this device. Please try again.");
+    } finally {
+      if (myToken === mmRenderToken) {
+        setLoading(false);
+      }
+    }
+  }
+
+  async function addSelectionsToCart() {
+    if (state.loading) return;
+    if (state.selections.length !== CONFIG.STEPS.length) return;
+
+    setLoading(true);
+    setStatus("Adding Mix & Match to cart…");
+
+    try {
+      const rawSkus = state.selections.map(function(s) {
+        return s.sku;
+      }).filter(Boolean).join(",");
+
+      const picksSummary = state.selections.map(function(s) {
+        const parts = [s.stepLabel, s.productTitle];
+        if (s.color) parts.push(s.color);
+        if (s.size) parts.push(s.size);
+        return parts.join(" / ");
+      }).join(" | ");
+
+      /* old
+      const properties = {};
+      properties[CONFIG.PROPERTIES.product_collection_key] = CONFIG.PROPERTIES.product_collection_value;
+      properties[CONFIG.PROPERTIES.raw_skus_key] = rawSkus;
+      properties.top = state.selections[0] ? state.selections[0].productTitle : "";
+      properties.bottom = state.selections[1] ? state.selections[1].productTitle : "";
+      properties.sports_bra = state.selections[2] ? state.selections[2].productTitle : "";
+      properties.selection_summary = picksSummary;
+      properties.selected_variant_ids = state.selections.map(function(s) {
+        return s.variantId;
+      }).join(",");
+      */
+      const properties = {};
+      properties[CONFIG.PROPERTIES.product_collection_key] = CONFIG.PROPERTIES.product_collection_value;
+      properties[CONFIG.PROPERTIES.raw_skus_key] = rawSkus;
+      //properties.upc = CONFIG.ROLLUP_UPC;
+      properties.top = state.selections[0] ? state.selections[0].productTitle : "";
+      properties.bottom = state.selections[1] ? state.selections[1].productTitle : "";
+      properties.sports_bra = state.selections[2] ? state.selections[2].productTitle : "";
+      properties.selection_summary = picksSummary;
+      properties.selected_variant_ids = state.selections.map(function(s) {
+        return s.variantId;
+      }).join(",");
+
+      const payload = {
+        items: [
+          {
+            id: CONFIG.ROLLUP_VARIANT_ID,
+            quantity: 1,
+            properties: properties
+          }
+        ]
+      };
+
+      const res = await fetchWithTimeout("/cart/add.js", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(payload)
+      }, 12000);
+
+      if (!res.ok) {
+        let msg = "Couldn’t add to cart.";
+        try {
+          const errJson = await res.json();
+          if (errJson && errJson.description) msg = errJson.description;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+
+      setStatus("Added to cart. Redirecting…");
+      window.location.href = "/cart";
+    } catch (err) {
+      console.error(err);
+      alert(err && err.message ? err.message : "Couldn’t add to cart.");
+      setStatus("Couldn’t add the Mix & Match item to the cart.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  backBtn.addEventListener("click", async function() {
+    if (state.loading) return;
+    if (state.stepIndex === 0) return;
+    state.stepIndex -= 1;
+    await queueRender({ scrollToTop: true });
+  });
+
+  resetBtn.addEventListener("click", async function() {
+    if (state.loading) return;
+
+    state.stepIndex = 0;
+    state.selections = [];
+    state.filters = {
+      top: { color: "", size: "" },
+      bottom: { color: "", size: "" },
+      sports_bra: { color: "", size: "" }
+    };
+    mmClearSavedState();
+
+    renderAside();
+    renderMobileFlow();
+    renderSummary();
+    await queueRender({ scrollToTop: true });
+  });
+
+  addToCartBtn.addEventListener("click", addSelectionsToCart);
+
+  window.addEventListener("error", function(e) {
+    console.error("MMAPP window error:", e.message, e.filename, e.lineno);
+  });
+
+  window.addEventListener("unhandledrejection", function(e) {
+    console.error("MMAPP unhandled rejection:", e.reason);
+  });
+
+  queueRender({ scrollToTop: false });
+})();
+</script>

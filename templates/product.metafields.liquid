@@ -1,0 +1,16 @@
+{% layout none %}
+{
+  "handle": {{ product.handle | json }},
+  "variants": {
+    {% assign first_variant = true %}
+    {% for variant in product.variants %}
+      {% unless first_variant %},{% endunless %}
+      {% assign first_variant = false %}
+      "{{ variant.id }}": {
+        "color": {{ variant.metafields.custom.color.value | default: "" | json }},
+        "size": {{ variant.option2 | default: "" | json }},
+        "available": {{ variant.available | json }}
+      }
+    {% endfor %}
+  }
+}

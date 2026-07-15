@@ -1,0 +1,47 @@
+{% comment %}
+  The contents of the product.liquid template can be found in /sections/product-template.liquid
+{% endcomment %}
+
+{% section 'product-template' %}
+
+{%- section 'size-guide' -%}
+
+<div class="slide-placeholder" style="opacity:0;height:1px;overflow:hidden;position:absolute;pointer-events:none;">
+</div>
+<div class="slide-placeholder-lightbox" style="opacity:0;height:1px;overflow:hidden;position:absolute;pointer-events:none;">
+</div>
+<script>
+
+
+
+	window.VIG = window.VIG || {};
+	VIG.loaded = false;
+	VIG.VariantChangeCallback = function(){
+      //console.log('start');
+     $('.product_gallery').css('opacity',0);
+		var visible_ids = $('.product_gallery_nav img:visible').map(function() {
+		return $(this).data('image-id');
+		}).get();
+
+
+		var slidesToAdd = [],
+            lightboxSlides =[];
+
+
+		visible_ids.forEach(function(element) {
+		slidesToAdd.push($('.slide-placeholder [data-image-id='+element+']').closest('.gallery-cell'));
+		});
+
+
+      $('.product_gallery').flickity( 'remove', $('.product_gallery:not(.js-gallery-modal) .gallery-cell') );
+		slidesToAdd.forEach(function(element) {
+		$('.product_gallery:not(.js-gallery-modal)').flickity( 'append', element.clone(true));
+            $('.product_gallery').css('opacity',1);
+
+		});
+	};
+
+
+</script>
+
+<div class="yotpo yotpo-main-widget" data-product-id="{{ product.id }}" data-name="{{ product.title | escape }}" data-url="{{ shop.url }}{{ product.url }}" data-image-url="{{ product.featured_image | product_img_url: "large" |replace: '?', '%3F' | replace: '&','%26'}}" data-description="{{ product.description | escape }}"></div>
