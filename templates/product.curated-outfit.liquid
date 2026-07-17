@@ -48,7 +48,7 @@
   data-curated-outfit
   data-parent-product-id="{{ product.id }}"
   data-parent-variant-id="{{ parent_variant.id }}"
-  data-product-collection="{{ collection_handle | escape }}"
+  data-product-collection="{{ collection_title | escape }}"
 >
 
   <div class="curated-outfit__layout">
@@ -153,6 +153,8 @@
 
             {% for outfit_product in outfit_collection.products %}
 
+              {% assign normalized_product_type = outfit_product.type | strip | downcase | replace: ' ', '-' %}
+
               {% comment %}
                 Locate the product option named "Size". Size may
                 be option 1, 2, or 3.
@@ -183,6 +185,7 @@
                 data-product-id="{{ outfit_product.id }}"
                 data-product-handle="{{ outfit_product.handle }}"
                 data-product-title="{{ outfit_product.title | escape }}"
+                data-product-type="{{ normalized_product_type | escape }}"
               >
 
                 <legend class="curated-outfit__item-title">
@@ -414,13 +417,15 @@
     {
       "parent_product_id": {{ product.id | json }},
       "parent_variant_id": {{ parent_variant.id | json }},
-      "product_collection": {{ outfit_collection.handle | json }},
+      "product_collection": {{ collection_title | json }},
       "products": [
         {% for outfit_product in outfit_collection.products %}
+          {% assign normalized_product_type = outfit_product.type | strip | downcase | replace: ' ', '-' %}
           {
             "id": {{ outfit_product.id | json }},
             "title": {{ outfit_product.title | json }},
             "handle": {{ outfit_product.handle | json }},
+            "product_type": {{ normalized_product_type | json }},
             "options": {{ outfit_product.options | json }},
             "variants": [
               {% for variant in outfit_product.variants %}
@@ -447,19 +452,20 @@
   ============================================================
   ADD-TO-CART JAVASCRIPT
 
-  The parent curated-outfit variant is added to the cart with:
+  The parent curated-outfit variant is added to the cart with
+  one line-item property per Shopify Product type:
 
     product_collection:
-      mocha-latte-3-items
+      Mocha Latte - 3 Items
 
-    selected_products:
-      {
-        "component-product-handle": "M",
-        "another-component-handle": "L"
-      }
+    sports-bra: M
+    leggings: M
+    tops: M
 
-  selected_products is stored as a JSON string in the Shopify
-  line-item property.
+  A Product type such as "Sports Bra" is lowercased and its
+  spaces are replaced with hyphens to produce "sports-bra".
+  Each component product must have a unique, nonblank Product
+  type in Shopify.
   ============================================================
 {% endcomment %}
 
@@ -509,16 +515,17 @@
     var selections = {};
     var missingProducts = [];
     var unavailableProducts = [];
+    var configurationErrors = [];
 
     Array.prototype.forEach.call(
       outfitItems,
       function(item) {
-        var productHandle = item.getAttribute(
-          'data-product-handle'
-        );
-
         var productTitle = item.getAttribute(
           'data-product-title'
+        );
+
+        var productType = item.getAttribute(
+          'data-product-type'
         );
 
         var sizeInputs = item.querySelectorAll(
@@ -539,18 +546,38 @@
           return;
         }
 
-        selections[productHandle] = selectedInput.value;
+        if (!productType) {
+          configurationErrors.push(
+            productTitle + ' is missing its Shopify Product type'
+          );
+          return;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(
+          selections,
+          productType
+        )) {
+          configurationErrors.push(
+            'More than one component uses the Product type "' +
+            productType + '"'
+          );
+          return;
+        }
+
+        selections[productType] = selectedInput.value;
       }
     );
 
     return {
       valid:
         missingProducts.length === 0 &&
-        unavailableProducts.length === 0,
+        unavailableProducts.length === 0 &&
+        configurationErrors.length === 0,
 
       selections: selections,
       missingProducts: missingProducts,
-      unavailableProducts: unavailableProducts
+      unavailableProducts: unavailableProducts,
+      configurationErrors: configurationErrors
     };
   }
 
@@ -642,6 +669,17 @@
 
     var selectionResult = getSelections();
 
+    if (selectionResult.configurationErrors.length > 0) {
+      showMessage(
+        'This outfit is not configured correctly: ' +
+        selectionResult.configurationErrors.join('; ') +
+        '.',
+        'error'
+      );
+
+      return;
+    }
+
     if (selectionResult.unavailableProducts.length > 0) {
       showMessage(
         'This outfit cannot currently be purchased because ' +
@@ -683,15 +721,21 @@
       return;
     }
 
+    var lineItemProperties = {
+      product_collection: productCollection
+    };
+
+    Object.keys(selectionResult.selections).forEach(
+      function(productType) {
+        lineItemProperties[productType] =
+          selectionResult.selections[productType];
+      }
+    );
+
     var cartItem = {
       id: Number(parentVariantId),
       quantity: 1,
-      properties: {
-        product_collection: productCollection,
-        selected_products: JSON.stringify(
-          selectionResult.selections
-        )
-      }
+      properties: lineItemProperties
     };
 
     setLoadingState(true);
