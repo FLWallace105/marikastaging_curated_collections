@@ -337,6 +337,7 @@
               type="button"
               class="curated-outfit__add-to-cart"
               data-curated-outfit-add
+              disabled
             >
               Add outfit to cart
             </button>
@@ -622,6 +623,41 @@
   }
 
 
+  function allSizesSelected() {
+    if (outfitItems.length === 0) {
+      return false;
+    }
+
+    return Array.prototype.every.call(
+      outfitItems,
+      function(item) {
+        var sizeInputs = item.querySelectorAll(
+          'input[data-outfit-size]'
+        );
+
+        var selectedInput = item.querySelector(
+          'input[data-outfit-size]:checked'
+        );
+
+        return sizeInputs.length > 0 && Boolean(selectedInput);
+      }
+    );
+  }
+
+
+  function updateAddButtonState() {
+    if (!addButton) {
+      return;
+    }
+
+    if (addButton.getAttribute('aria-busy') === 'true') {
+      return;
+    }
+
+    addButton.disabled = !allSizesSelected();
+  }
+
+
   function setLoadingState(isLoading) {
     addButton.disabled = isLoading;
 
@@ -644,6 +680,8 @@
         addButton.textContent = originalLabel;
         addButton.removeAttribute('data-original-label');
       }
+
+      updateAddButtonState();
     }
   }
 
@@ -815,7 +853,24 @@
   );
 
 
+  var sizeInputs = root.querySelectorAll(
+    'input[data-outfit-size]'
+  );
+
+  Array.prototype.forEach.call(
+    sizeInputs,
+    function(sizeInput) {
+      sizeInput.addEventListener(
+        'change',
+        updateAddButtonState
+      );
+    }
+  );
+
+
   if (addButton) {
+    updateAddButtonState();
+
     addButton.addEventListener(
       'click',
       addOutfitToCart
