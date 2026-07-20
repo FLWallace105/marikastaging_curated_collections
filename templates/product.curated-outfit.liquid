@@ -153,7 +153,8 @@
 
             {% for outfit_product in outfit_collection.products %}
 
-              {% assign normalized_product_type = outfit_product.type | strip | downcase | replace: ' ', '-' %}
+              {% assign display_product_type = outfit_product.type | default: outfit_product.product_type | strip %}
+              {% assign normalized_product_type = display_product_type | downcase | replace: ' ', '-' %}
 
               {% comment %}
                 Locate the product option named "Size". Size may
@@ -189,7 +190,9 @@
               >
 
                 <legend class="curated-outfit__item-title">
-                  <span>{{ outfit_product.title }}</span>
+                  <span class="curated-outfit__item-name">
+                    {{ outfit_product.title }}
+                  </span>
 
                   <button
                     type="button"
@@ -208,6 +211,12 @@
                     ></span>
                   </button>
                 </legend>
+
+                {% if display_product_type != blank %}
+                  <div class="curated-outfit__item-type">
+                    {{ display_product_type }}
+                  </div>
+                {% endif %}
 
                 <div
                   id="OutfitDescription-{{ outfit_product.id }}"
@@ -433,7 +442,8 @@
       "product_collection": {{ collection_title | json }},
       "products": [
         {% for outfit_product in outfit_collection.products %}
-          {% assign normalized_product_type = outfit_product.type | strip | downcase | replace: ' ', '-' %}
+          {% assign display_product_type = outfit_product.type | default: outfit_product.product_type | strip %}
+          {% assign normalized_product_type = display_product_type | downcase | replace: ' ', '-' %}
           {
             "id": {{ outfit_product.id | json }},
             "title": {{ outfit_product.title | json }},
@@ -1012,12 +1022,31 @@
     width: 100%;
     align-items: center;
     gap: 10px;
-    margin: 0 0 13px;
+    margin: 0 0 8px;
     padding: 0;
     font-size: 14px;
     font-weight: 600;
     line-height: 1.4;
     letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .curated-outfit__item-name {
+    display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .curated-outfit__item-type {
+    display: inline-block;
+    margin: 0 0 13px;
+    padding: 5px 9px;
+    background: #222;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
