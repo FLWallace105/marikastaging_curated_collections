@@ -163,8 +163,9 @@
 
 
               {% comment %}
-                Here put the drop down arrow as in Ellie and the product description for each product
-
+                The product name is a button styled as a text link. Using a
+                button prevents theme-level link handlers from navigating away
+                before the product details modal can open.
               {% endcomment %}
 
               {% assign size_option_position = 0 %}
@@ -190,25 +191,25 @@
               >
 
                 <legend class="curated-outfit__item-title">
-                  <span class="curated-outfit__item-name">
-                    {{ outfit_product.title }}
-                  </span>
-
                   <button
                     type="button"
-                    class="curated-outfit__item-description-toggle"
-                    aria-expanded="false"
-                    aria-controls="OutfitDescription-{{ outfit_product.id }}"
-                    data-description-toggle
+                    class="curated-outfit__item-details-trigger"
+                    aria-haspopup="dialog"
+                    aria-controls="OutfitDetails-{{ outfit_product.id }}"
+                    aria-describedby="OutfitTooltip-{{ outfit_product.id }}"
+                    data-product-details-trigger
                   >
-                    <span class="curated-outfit__visually-hidden">
-                      Show or hide the description for {{ outfit_product.title }}
+                    <span class="curated-outfit__item-name">
+                      {{ outfit_product.title }}
                     </span>
 
                     <span
-                      class="curated-outfit__item-description-arrow"
-                      aria-hidden="true"
-                    ></span>
+                      id="OutfitTooltip-{{ outfit_product.id }}"
+                      class="curated-outfit__item-details-tooltip"
+                      role="tooltip"
+                    >
+                      See details
+                    </span>
                   </button>
                 </legend>
 
@@ -219,22 +220,89 @@
                 {% endif %}
 
                 <div
-                  id="OutfitDescription-{{ outfit_product.id }}"
-                  class="curated-outfit__item-description-content rte"
-                  data-description-content
+                  id="OutfitDetails-{{ outfit_product.id }}"
+                  class="curated-outfit__details-modal"
+                  data-product-details-modal
                   hidden
                 >
-                  {% if outfit_product.description != blank %}
+                  <div
+                    class="curated-outfit__details-backdrop"
+                    data-product-details-close
+                  ></div>
 
-                    {{ outfit_product.description }}
+                  <div
+                    class="curated-outfit__details-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="OutfitDetailsTitle-{{ outfit_product.id }}"
+                    tabindex="-1"
+                    data-product-details-dialog
+                  >
+                    <button
+                      type="button"
+                      class="curated-outfit__details-close"
+                      aria-label="Close details for {{ outfit_product.title | escape }}"
+                      data-product-details-close
+                    >
+                      <span aria-hidden="true">&times;</span>
+                    </button>
 
-                  {% else %}
+                    <div class="curated-outfit__details-layout">
+                      {% if outfit_product.images.size > 0 %}
+                        <div class="curated-outfit__details-media">
+                          <div class="curated-outfit__details-media-grid">
+                            {% for detail_image in outfit_product.images %}
+                              <figure class="curated-outfit__details-media-item">
+                                <img
+                                  class="curated-outfit__details-image"
+                                  src="{{ detail_image | img_url: '900x' }}"
+                                  srcset="
+                                    {{ detail_image | img_url: '400x' }} 400w,
+                                    {{ detail_image | img_url: '600x' }} 600w,
+                                    {{ detail_image | img_url: '900x' }} 900w
+                                  "
+                                  sizes="
+                                    (max-width: 767px) calc((100vw - 76px) / 2),
+                                    190px
+                                  "
+                                  alt="{{ detail_image.alt | default: outfit_product.title | escape }}"
+                                  width="{{ detail_image.width }}"
+                                  height="{{ detail_image.height }}"
+                                  loading="lazy"
+                                >
+                              </figure>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% endif %}
 
-                    <p class="curated-outfit__component-error">
-                      Error: This product does not have a description.
-                    </p>
+                      <div class="curated-outfit__details-content">
+                        <h2
+                          id="OutfitDetailsTitle-{{ outfit_product.id }}"
+                          class="curated-outfit__details-title"
+                        >
+                          {{ outfit_product.title }}
+                        </h2>
 
-                  {% endif %}
+                        {% if display_product_type != blank %}
+                          <p class="curated-outfit__details-type">
+                            {{ display_product_type }}
+                          </p>
+                        {% endif %}
+
+                        <div class="curated-outfit__details-description rte">
+                          {% if outfit_product.description != blank %}
+                            {{ outfit_product.description }}
+                          {% else %}
+                            <p class="curated-outfit__component-error">
+                              Error: This product does not have a description.
+                            </p>
+                          {% endif %}
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
 
@@ -847,32 +915,133 @@
   }
 
 
-  var descriptionToggles = root.querySelectorAll(
-    '[data-description-toggle]'
+  var detailsTriggers = root.querySelectorAll(
+    '[data-product-details-trigger]'
   );
 
+  var activeDetailsModal = null;
+  var detailsReturnFocus = null;
+
+  function getFocusableElements(container) {
+    return container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), ' +
+      'select:not([disabled]), textarea:not([disabled]), ' +
+      '[tabindex]:not([tabindex="-1"])'
+    );
+  }
+
+
+  function openDetailsModal(trigger) {
+    var modalId = trigger.getAttribute('aria-controls');
+    var modal = document.getElementById(modalId);
+
+    if (!modal) {
+      return;
+    }
+
+    detailsReturnFocus = trigger;
+    activeDetailsModal = modal;
+    modal.hidden = false;
+    document.body.classList.add('curated-outfit-modal-open');
+
+    var initialFocus = modal.querySelector(
+      'button[data-product-details-close]'
+    );
+
+    if (!initialFocus) {
+      initialFocus = modal.querySelector(
+        '[data-product-details-dialog]'
+      );
+    }
+
+    if (initialFocus) {
+      initialFocus.focus();
+    }
+  }
+
+
+  function closeDetailsModal() {
+    if (!activeDetailsModal) {
+      return;
+    }
+
+    activeDetailsModal.hidden = true;
+    activeDetailsModal = null;
+    document.body.classList.remove('curated-outfit-modal-open');
+
+    if (detailsReturnFocus) {
+      detailsReturnFocus.focus();
+      detailsReturnFocus = null;
+    }
+  }
+
+
   Array.prototype.forEach.call(
-    descriptionToggles,
-    function(toggle) {
-      toggle.addEventListener('click', function() {
-        var descriptionId = toggle.getAttribute('aria-controls');
-        var description = document.getElementById(descriptionId);
-
-        if (!description) {
-          return;
-        }
-
-        var isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-
-        toggle.setAttribute(
-          'aria-expanded',
-          isExpanded ? 'false' : 'true'
-        );
-
-        description.hidden = isExpanded;
+    detailsTriggers,
+    function(trigger) {
+      trigger.addEventListener('click', function(event) {
+        event.preventDefault();
+        openDetailsModal(trigger);
       });
     }
   );
+
+
+  var detailsCloseControls = root.querySelectorAll(
+    '[data-product-details-close]'
+  );
+
+  Array.prototype.forEach.call(
+    detailsCloseControls,
+    function(control) {
+      control.addEventListener('click', closeDetailsModal);
+    }
+  );
+
+
+  document.addEventListener('keydown', function(event) {
+    if (!activeDetailsModal) {
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeDetailsModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    var focusableElements = getFocusableElements(
+      activeDetailsModal
+    );
+
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    var firstFocusable = focusableElements[0];
+    var lastFocusable = focusableElements[
+      focusableElements.length - 1
+    ];
+
+    if (
+      event.shiftKey &&
+      document.activeElement === firstFocusable
+    ) {
+      event.preventDefault();
+      lastFocusable.focus();
+    } else if (
+      !event.shiftKey &&
+      document.activeElement === lastFocusable
+    ) {
+      event.preventDefault();
+      firstFocusable.focus();
+    }
+  });
 
 
   var sizeInputs = root.querySelectorAll(
@@ -1018,10 +1187,7 @@
   }
 
   .curated-outfit__item-title {
-    display: flex;
     width: 100%;
-    align-items: center;
-    gap: 10px;
     margin: 0 0 8px;
     padding: 0;
     font-size: 14px;
@@ -1034,21 +1200,91 @@
   .curated-outfit__item-name {
     display: block;
     min-width: 0;
-    flex: 1 1 auto;
   }
 
-  .curated-outfit__item-type {
+  .curated-outfit__item-details-trigger {
+    position: relative;
     display: inline-block;
-    margin: 0 0 13px;
-    padding: 5px 9px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #222;
+    font: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .curated-outfit__item-details-trigger:hover,
+  .curated-outfit__item-details-trigger:focus-visible {
+    color: #555;
+  }
+
+  .curated-outfit__item-details-trigger:focus-visible {
+    outline: 2px solid #222;
+    outline-offset: 4px;
+  }
+
+  .curated-outfit__item-details-tooltip {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: calc(100% + 9px);
+    width: max-content;
+    max-width: 180px;
+    padding: 7px 9px;
+    border-radius: 3px;
     background: #222;
     color: #fff;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.2;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: normal;
+    text-transform: none;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
   }
+
+  .curated-outfit__item-details-tooltip::after {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    border: 5px solid transparent;
+    border-top-color: #222;
+    content: '';
+    transform: translateX(-50%);
+  }
+
+  .curated-outfit__item-details-trigger:hover
+  .curated-outfit__item-details-tooltip,
+  .curated-outfit__item-details-trigger:focus-visible
+  .curated-outfit__item-details-tooltip {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .curated-outfit__item-type {
+  display: block;
+  margin: 0 0 13px;
+  padding: 0;
+  background: transparent;
+  color: #222;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 
   .curated-outfit__sizes {
     display: flex;
@@ -1277,7 +1513,7 @@
   }
 
   /* ========================================================
-     COMPONENT DESCRIPTION TOGGLE
+     COMPONENT PRODUCT DETAILS MODAL
      ======================================================== */
 
   .curated-outfit__visually-hidden {
@@ -1293,59 +1529,198 @@
     border: 0;
   }
 
-  .curated-outfit__item-description-toggle {
-    display: inline-flex;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
+  body.curated-outfit-modal-open {
+    overflow: hidden;
+  }
+
+  .curated-outfit__details-modal[hidden] {
+    display: none;
+  }
+
+  .curated-outfit__details-modal {
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0;
+    padding: 24px;
+  }
+
+  .curated-outfit__details-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.62);
+  }
+
+  .curated-outfit__details-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(920px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    padding: 34px;
+    background: #fff;
+    color: #222;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .curated-outfit__details-dialog:focus {
+    outline: none;
+  }
+
+  .curated-outfit__details-close {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
     padding: 0;
-    border: 0;
-    background: transparent;
-    color: currentColor;
+    border: 1px solid #222;
+    border-radius: 50%;
+    background: #fff;
+    background-image: none !important;
+    color: #222;
+    font: inherit;
+    font-size: 28px;
+    line-height: 1;
+    box-shadow: none;
     cursor: pointer;
   }
 
-  .curated-outfit__item-description-toggle:focus-visible {
+  .curated-outfit__details-close::before,
+  .curated-outfit__details-close::after,
+  .curated-outfit__details-close span::before,
+  .curated-outfit__details-close span::after {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: none !important;
+    content: none !important;
+  }
+
+  .curated-outfit__details-close:hover {
+    background: #222;
+    color: #fff;
+  }
+
+  .curated-outfit__details-close:focus-visible {
     outline: 2px solid #222;
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
-  .curated-outfit__item-description-arrow {
-    width: 8px;
-    height: 8px;
-    border-right: 1px solid currentColor;
-    border-bottom: 1px solid currentColor;
-    transform: translateY(-2px) rotate(45deg);
-    transition: transform 150ms ease;
+  .curated-outfit__details-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 34px;
+    align-items: start;
   }
 
-  .curated-outfit__item-description-toggle[aria-expanded="true"]
-  .curated-outfit__item-description-arrow {
-    transform: translateY(2px) rotate(225deg);
+  .curated-outfit__details-image {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
-  .curated-outfit__item-description-content {
-    margin: 0 0 16px;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.6;
+  .curated-outfit__details-media {
+    max-height: calc(100vh - 116px);
+    padding-right: 4px;
+    overflow-y: auto;
+  }
+
+  .curated-outfit__details-media-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .curated-outfit__details-media-item {
+    margin: 0;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+
+  .curated-outfit__details-media-item:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .curated-outfit__details-content {
+    min-width: 0;
+    padding: 12px 38px 4px 0;
+  }
+
+  .curated-outfit__details-title {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.2;
     letter-spacing: normal;
     text-transform: none;
   }
 
-  .curated-outfit__item-description-content[hidden] {
-    display: none;
+  .curated-outfit__details-type {
+    margin: 0 0 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
-  .curated-outfit__item-description-content > :first-child {
+  .curated-outfit__details-description {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.65;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  .curated-outfit__details-description > :first-child {
     margin-top: 0;
   }
 
-  .curated-outfit__item-description-content > :last-child {
+  .curated-outfit__details-description > :last-child {
     margin-bottom: 0;
+  }
+
+  @media screen and (max-width: 767px) {
+    .curated-outfit__details-modal {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .curated-outfit__details-dialog {
+      width: 100%;
+      max-height: 92vh;
+      padding: 26px 20px 32px;
+    }
+
+    .curated-outfit__details-layout {
+      display: block;
+    }
+
+    .curated-outfit__details-media {
+      max-height: none;
+      margin: 0 30px 24px 0;
+      padding-right: 0;
+      overflow: visible;
+    }
+
+    .curated-outfit__details-media-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .curated-outfit__details-content {
+      padding: 0;
+    }
+
+    .curated-outfit__details-title {
+      padding-right: 35px;
+      font-size: 24px;
+    }
   }
 
 
