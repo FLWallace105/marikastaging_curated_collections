@@ -236,62 +236,74 @@
                     data-size-options
                   >
 
-                    {% assign seen_sizes = '|' %}
                     {% assign available_size_count = 0 %}
 
-                    {% for variant in outfit_product.variants %}
+                    {% for size_option in outfit_product.options_with_values %}
 
-                      {% if variant.available %}
+                      {% if size_option.position == size_option_position %}
 
-                        {% assign size_value = blank %}
+                        {% for raw_size_value in size_option.values %}
 
-                        {% case size_option_position %}
+                          {% assign size_value = raw_size_value | strip %}
+                          {% assign size_is_available = false %}
 
-                          {% when 1 %}
-                            {% assign size_value = variant.option1 %}
+                          {% for variant in outfit_product.variants %}
 
-                          {% when 2 %}
-                            {% assign size_value = variant.option2 %}
+                            {% assign variant_size_value = blank %}
 
-                          {% when 3 %}
-                            {% assign size_value = variant.option3 %}
+                            {% case size_option_position %}
 
-                        {% endcase %}
+                              {% when 1 %}
+                                {% assign variant_size_value = variant.option1 %}
 
+                              {% when 2 %}
+                                {% assign variant_size_value = variant.option2 %}
 
-                        {% assign size_value = size_value | strip %}
+                              {% when 3 %}
+                                {% assign variant_size_value = variant.option3 %}
 
-                        {% if size_value != blank %}
+                            {% endcase %}
 
-                          {% assign size_token = '|' | append: size_value | append: '|' %}
+                            {% assign variant_size_value = variant_size_value | strip %}
 
-                          {% unless seen_sizes contains size_token %}
+                            {% if variant.available and variant_size_value == size_value %}
+                              {% assign size_is_available = true %}
+                              {% break %}
+                            {% endif %}
 
-                            {% assign seen_sizes = seen_sizes | append: size_value | append: '|' %}
+                          {% endfor %}
+
+                          {% if size_is_available %}
                             {% assign available_size_count = available_size_count | plus: 1 %}
+                          {% endif %}
 
-                            <label class="curated-outfit__size">
+                          <label class="curated-outfit__size{% unless size_is_available %} curated-outfit__size--unavailable{% endunless %}">
 
-                              <input
-                                type="radio"
-                                class="curated-outfit__size-input"
-                                name="outfit_{{ outfit_product.handle }}"
-                                value="{{ size_value | escape }}"
-                                data-outfit-size
-                                data-product-id="{{ outfit_product.id }}"
-                                data-product-handle="{{ outfit_product.handle }}"
-                                data-product-title="{{ outfit_product.title | escape }}"
-                              >
+                            <input
+                              type="radio"
+                              class="curated-outfit__size-input"
+                              name="outfit_{{ outfit_product.handle }}"
+                              value="{{ size_value | escape }}"
+                              data-outfit-size
+                              data-product-id="{{ outfit_product.id }}"
+                              data-product-handle="{{ outfit_product.handle }}"
+                              data-product-title="{{ outfit_product.title | escape }}"
+                              {% unless size_is_available %}disabled{% endunless %}
+                            >
 
-                              <span class="curated-outfit__size-label">
-                                {{ size_value }}
-                              </span>
+                            <span class="curated-outfit__size-label">
+                              {{ size_value }}
 
-                            </label>
+                              {% unless size_is_available %}
+                                <span class="curated-outfit__visually-hidden">
+                                  (Sold out)
+                                </span>
+                              {% endunless %}
+                            </span>
 
-                          {% endunless %}
+                          </label>
 
-                        {% endif %}
+                        {% endfor %}
 
                       {% endif %}
 
@@ -530,7 +542,7 @@
         );
 
         var sizeInputs = item.querySelectorAll(
-          'input[data-outfit-size]'
+          'input[data-outfit-size]:not(:disabled)'
         );
 
         var selectedInput = item.querySelector(
@@ -590,7 +602,7 @@
       outfitItems,
       function(item) {
         var hasInputs = item.querySelector(
-          'input[data-outfit-size]'
+          'input[data-outfit-size]:not(:disabled)'
         );
 
         var hasSelection = item.querySelector(
@@ -613,7 +625,7 @@
       });
 
       var firstInput = firstMissingItem.querySelector(
-        'input[data-outfit-size]'
+        'input[data-outfit-size]:not(:disabled)'
       );
 
       if (firstInput) {
@@ -632,7 +644,7 @@
       outfitItems,
       function(item) {
         var sizeInputs = item.querySelectorAll(
-          'input[data-outfit-size]'
+          'input[data-outfit-size]:not(:disabled)'
         );
 
         var selectedInput = item.querySelector(
@@ -1068,6 +1080,23 @@
   .curated-outfit__size-label {
     outline: 2px solid #222;
     outline-offset: 3px;
+  }
+
+  .curated-outfit__size--unavailable {
+    cursor: not-allowed;
+  }
+
+  .curated-outfit__size--unavailable
+  .curated-outfit__size-label {
+    border-color: #c7c7c7;
+    background: #e5e5e5;
+    color: #8a8a8a;
+    text-decoration: line-through;
+  }
+
+  .curated-outfit__size--unavailable:hover
+  .curated-outfit__size-label {
+    border-color: #c7c7c7;
   }
 
   .curated-outfit__component-error {
