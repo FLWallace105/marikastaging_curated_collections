@@ -939,6 +939,15 @@
       return;
     }
 
+    /*
+      Move the modal outside the product section before displaying it.
+      This prevents sticky theme headers and their search/login icons
+      from appearing above the modal through a competing stacking context.
+    */
+    if (modal.parentNode !== document.body) {
+      document.body.appendChild(modal);
+    }
+
     detailsReturnFocus = trigger;
     activeDetailsModal = modal;
     modal.hidden = false;
@@ -1539,7 +1548,7 @@
 
   .curated-outfit__details-modal {
     position: fixed;
-    z-index: 10000;
+    z-index: 2147483000;
     inset: 0;
     display: flex;
     align-items: center;
