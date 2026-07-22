@@ -305,10 +305,27 @@
                         {% if product_details_text != blank %}
                           <section class="curated-outfit__details-care">
                             <h3 class="curated-outfit__details-care-title">
-                              Details &amp; Care
+                              <button
+                                type="button"
+                                class="curated-outfit__details-care-toggle"
+                                aria-expanded="false"
+                                aria-controls="OutfitDetailsCare-{{ outfit_product.id }}"
+                                data-details-care-toggle
+                              >
+                                <span>Details &amp; Care</span>
+                                <span
+                                  class="curated-outfit__details-care-arrow"
+                                  aria-hidden="true"
+                                ></span>
+                              </button>
                             </h3>
 
-                            <div class="curated-outfit__details-care-text">
+                            <div
+                              id="OutfitDetailsCare-{{ outfit_product.id }}"
+                              class="curated-outfit__details-care-text"
+                              data-details-care-content
+                              hidden
+                            >
                               {{ product_details_text | escape | newline_to_br }}
                             </div>
                           </section>
@@ -1067,6 +1084,35 @@
   });
 
 
+  var detailsCareToggles = root.querySelectorAll(
+    '[data-details-care-toggle]'
+  );
+
+  Array.prototype.forEach.call(
+    detailsCareToggles,
+    function(toggle) {
+      toggle.addEventListener('click', function() {
+        var contentId = toggle.getAttribute('aria-controls');
+        var content = document.getElementById(contentId);
+
+        if (!content) {
+          return;
+        }
+
+        var isExpanded =
+          toggle.getAttribute('aria-expanded') === 'true';
+
+        toggle.setAttribute(
+          'aria-expanded',
+          isExpanded ? 'false' : 'true'
+        );
+
+        content.hidden = isExpanded;
+      });
+    }
+  );
+
+
   var sizeInputs = root.querySelectorAll(
     'input[data-outfit-size]'
   );
@@ -1739,7 +1785,7 @@
   }
 
   .curated-outfit__details-care-title {
-    margin: 0 0 12px;
+    margin: 0;
     font-size: 14px;
     font-weight: 700;
     line-height: 1.3;
@@ -1747,12 +1793,72 @@
     text-transform: uppercase;
   }
 
+  .curated-outfit__details-care-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0;
+    padding: 0 3px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #222;
+    box-shadow: none;
+    font: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    text-align: left;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .curated-outfit__details-care-toggle::before,
+  .curated-outfit__details-care-toggle::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  .curated-outfit__details-care-toggle:hover {
+    border: 0;
+    background: transparent;
+    color: #222;
+    box-shadow: none;
+  }
+
+  .curated-outfit__details-care-toggle:focus-visible {
+    outline: 2px solid #222;
+    outline-offset: 4px;
+  }
+
+  .curated-outfit__details-care-arrow {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 150ms ease;
+  }
+
+  .curated-outfit__details-care-toggle[aria-expanded="true"]
+  .curated-outfit__details-care-arrow {
+    transform: rotate(225deg);
+  }
+
   .curated-outfit__details-care-text {
+    padding-top: 14px;
     font-size: 15px;
     font-weight: 400;
     line-height: 1.65;
     letter-spacing: normal;
     text-transform: none;
+  }
+
+  .curated-outfit__details-care-text[hidden] {
+    display: none;
   }
 
   @media screen and (max-width: 767px) {
