@@ -1187,19 +1187,27 @@
   }
 
   .curated-outfit__item-title {
+    display: block !important;
     width: 100%;
-    margin: 0 0 3px;
-    padding: 0;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
     font-size: 14px;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.15 !important;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
   .curated-outfit__item-name {
-    display: block;
+    display: block !important;
     min-width: 0;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.15 !important;
   }
 
   .curated-outfit
@@ -1220,18 +1228,22 @@
   .curated-outfit__item-details-trigger {
     position: relative;
     display: inline-block;
-    margin: 0;
-    padding: 0;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
     border: 0 !important;
     border-radius: 0;
     background: transparent !important;
     color: #0000ee !important;
     box-shadow: none !important;
     font: inherit;
+    line-height: 1.15 !important;
     letter-spacing: inherit;
     text-align: left;
     text-decoration: none !important;
     text-transform: inherit;
+    vertical-align: top;
     cursor: pointer;
   }
 
@@ -1263,9 +1275,11 @@
   }
 
   .curated-outfit__item-type {
-  display: block;
-  margin: 0 0 13px;
-  padding: 0;
+  display: block !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 1px 0 13px !important;
+  padding: 0 !important;
   background: transparent;
   color: #222;
   font-size: 13px;
