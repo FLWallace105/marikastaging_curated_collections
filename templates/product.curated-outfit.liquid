@@ -40,6 +40,7 @@
 {% assign collection_handle = collection_title | handleize %}
 {% assign outfit_collection = collections[collection_handle] %}
 {% assign parent_variant = product.selected_or_first_available_variant %}
+{% assign size_guide_page = pages['size-guides'] %}
 
 
 <div
@@ -327,6 +328,35 @@
                               hidden
                             >
                               {{ product_details_text | escape | newline_to_br }}
+                            </div>
+                          </section>
+                        {% endif %}
+
+                        {% if size_guide_page != blank and size_guide_page.content != blank %}
+                          <section class="curated-outfit__details-care curated-outfit__size-guide">
+                            <h3 class="curated-outfit__details-care-title">
+                              <button
+                                type="button"
+                                class="curated-outfit__details-care-toggle"
+                                aria-expanded="false"
+                                aria-controls="OutfitSizeGuide-{{ outfit_product.id }}"
+                                data-details-care-toggle
+                              >
+                                <span>Size Guide</span>
+                                <span
+                                  class="curated-outfit__details-care-arrow"
+                                  aria-hidden="true"
+                                ></span>
+                              </button>
+                            </h3>
+
+                            <div
+                              id="OutfitSizeGuide-{{ outfit_product.id }}"
+                              class="curated-outfit__details-care-text curated-outfit__size-guide-content rte"
+                              data-details-care-content
+                              hidden
+                            >
+                              {{ size_guide_page.content }}
                             </div>
                           </section>
                         {% endif %}
@@ -1859,6 +1889,43 @@
 
   .curated-outfit__details-care-text[hidden] {
     display: none;
+  }
+
+  .curated-outfit__size-guide-content {
+    overflow-x: auto;
+  }
+
+  .curated-outfit__size-guide-content > :first-child {
+    margin-top: 0;
+  }
+
+  .curated-outfit__size-guide-content > :last-child {
+    margin-bottom: 0;
+  }
+
+  .curated-outfit__size-guide-content img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .curated-outfit__size-guide-content table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .curated-outfit__size-guide-content th,
+  .curated-outfit__size-guide-content td {
+    padding: 8px;
+    border: 1px solid #c7c7c7;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .curated-outfit__size-guide-content th {
+    font-weight: 700;
   }
 
   @media screen and (max-width: 767px) {
