@@ -41,6 +41,7 @@
 {% assign outfit_collection = collections[collection_handle] %}
 {% assign parent_variant = product.selected_or_first_available_variant %}
 {% assign size_guide_page = pages['size-guides'] %}
+{% assign shipping_returns_page = pages['shipping-returns'] %}
 
 
 <div
@@ -357,6 +358,35 @@
                               hidden
                             >
                               {{ size_guide_page.content }}
+                            </div>
+                          </section>
+                        {% endif %}
+
+                        {% if shipping_returns_page != blank and shipping_returns_page.content != blank %}
+                          <section class="curated-outfit__details-care curated-outfit__shipping-returns">
+                            <h3 class="curated-outfit__details-care-title">
+                              <button
+                                type="button"
+                                class="curated-outfit__details-care-toggle"
+                                aria-expanded="false"
+                                aria-controls="OutfitShippingReturns-{{ outfit_product.id }}"
+                                data-details-care-toggle
+                              >
+                                <span>Shipping and Returns</span>
+                                <span
+                                  class="curated-outfit__details-care-arrow"
+                                  aria-hidden="true"
+                                ></span>
+                              </button>
+                            </h3>
+
+                            <div
+                              id="OutfitShippingReturns-{{ outfit_product.id }}"
+                              class="curated-outfit__details-care-text curated-outfit__shipping-returns-content rte"
+                              data-details-care-content
+                              hidden
+                            >
+                              {{ shipping_returns_page.content }}
                             </div>
                           </section>
                         {% endif %}
