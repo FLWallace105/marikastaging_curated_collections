@@ -1972,18 +1972,40 @@
     }
 
     .curated-outfit__details-dialog {
-      width: 100%;
-      max-height: 92vh;
-      padding: 26px 20px 32px;
+      box-sizing: border-box;
+      width: calc(100% - 20px);
+      max-height: calc(100vh - 20px);
+      max-height: calc(100dvh - 20px);
+      margin: 10px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .curated-outfit__details-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 34px;
+      height: 34px;
+      font-size: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
     }
 
     .curated-outfit__details-layout {
-      display: block;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 20px);
+      max-height: calc(100dvh - 20px);
+      padding: 18px 14px 24px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .curated-outfit__details-media {
+      order: 2;
       max-height: none;
-      margin: 0 30px 24px 0;
+      margin: 20px 0 0;
       padding-right: 0;
       overflow: visible;
     }
@@ -1993,17 +2015,63 @@
       gap: 6px;
     }
 
+    .curated-outfit__details-media-item:only-child {
+      grid-column: auto;
+    }
+
     .curated-outfit__details-content {
+      order: 1;
       padding: 0;
     }
 
     .curated-outfit__details-heading {
-      padding-right: 35px;
+      gap: 4px 12px;
+      margin-bottom: 5px;
+      padding-right: 38px;
     }
 
     .curated-outfit__details-title {
       padding-right: 0;
-      font-size: 24px;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .curated-outfit__details-price {
+      font-size: 14px;
+    }
+
+    .curated-outfit__details-type {
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+
+    .curated-outfit__details-description {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .curated-outfit__details-care {
+      margin-top: 16px;
+      padding-top: 12px;
+    }
+
+    .curated-outfit__details-care-title {
+      font-size: 12px;
+    }
+
+    .curated-outfit__details-care-text {
+      padding-top: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .curated-outfit__size-guide-content table {
+      font-size: 11px;
+    }
+
+    .curated-outfit__size-guide-content th,
+    .curated-outfit__size-guide-content td {
+      padding: 6px;
     }
   }
 
