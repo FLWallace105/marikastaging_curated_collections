@@ -1613,7 +1613,8 @@
     }
 
     .curated-outfit__layout {
-      display: block;
+      display: flex;
+      flex-direction: column;
     }
 
     .curated-outfit__media,
@@ -1622,13 +1623,19 @@
       min-width: 0;
     }
 
+    .curated-outfit__media {
+      order: 2;
+      margin-top: 28px;
+    }
+
     .curated-outfit__media-grid {
       grid-template-columns: 1fr;
       gap: 4px;
     }
 
     .curated-outfit__info {
-      margin-top: 28px;
+      order: 1;
+      margin-top: 0;
     }
 
     .curated-outfit__info-inner {
