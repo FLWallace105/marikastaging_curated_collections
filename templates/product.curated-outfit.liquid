@@ -445,10 +445,14 @@
                             {% assign available_size_count = available_size_count | plus: 1 %}
                           {% endif %}
 
-                          <label class="curated-outfit__size{% unless size_is_available %} curated-outfit__size--unavailable{% endunless %}">
+                          <label
+                            class="curated-outfit__size{% unless size_is_available %} curated-outfit__size--unavailable{% endunless %}"
+                            for="OutfitSize-{{ outfit_product.id }}-{{ size_value | handleize }}"
+                          >
 
                             <input
                               type="radio"
+                              id="OutfitSize-{{ outfit_product.id }}-{{ size_value | handleize }}"
                               class="curated-outfit__size-input"
                               name="outfit_{{ outfit_product.handle }}"
                               value="{{ size_value | escape }}"
@@ -1173,8 +1177,71 @@
   );
 
 
+  var sizeControls = root.querySelectorAll(
+    '.curated-outfit__size'
+  );
+
   var sizeInputs = root.querySelectorAll(
     'input[data-outfit-size]'
+  );
+
+
+  function syncSizeControlStates() {
+    Array.prototype.forEach.call(
+      sizeControls,
+      function(sizeControl) {
+        var sizeInput = sizeControl.querySelector(
+          'input[data-outfit-size]'
+        );
+
+        sizeControl.classList.toggle(
+          'curated-outfit__size--selected',
+          Boolean(sizeInput && sizeInput.checked)
+        );
+      }
+    );
+  }
+
+
+  function selectSizeControl(sizeControl, event) {
+    var sizeInput = sizeControl.querySelector(
+      'input[data-outfit-size]'
+    );
+
+    if (!sizeInput || sizeInput.disabled) {
+      return;
+    }
+
+    /*
+      Some mobile theme handlers prevent a label's native radio
+      activation. Set the checked state explicitly so a tap cannot
+      leave the input focused but unchecked.
+    */
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    sizeInput.checked = true;
+    syncSizeControlStates();
+    updateAddButtonState();
+
+    var changeEvent = document.createEvent('Event');
+    changeEvent.initEvent('change', true, false);
+    sizeInput.dispatchEvent(changeEvent);
+  }
+
+
+  Array.prototype.forEach.call(
+    sizeControls,
+    function(sizeControl) {
+      sizeControl.addEventListener(
+        'click',
+        function(event) {
+          selectSizeControl(sizeControl, event);
+        }
+      );
+    }
   );
 
   Array.prototype.forEach.call(
@@ -1182,13 +1249,17 @@
     function(sizeInput) {
       sizeInput.addEventListener(
         'change',
-        updateAddButtonState
+        function() {
+          syncSizeControlStates();
+          updateAddButtonState();
+        }
       );
     }
   );
 
 
   if (addButton) {
+    syncSizeControlStates();
     updateAddButtonState();
 
     addButton.addEventListener(
@@ -1429,6 +1500,7 @@
     display: inline-block;
     margin: 0;
     cursor: pointer;
+    touch-action: manipulation;
   }
 
   .curated-outfit__size-input {
@@ -1468,11 +1540,18 @@
     box-shadow: inset 0 0 0 2px #222;
   }
 
+  .curated-outfit
   .curated-outfit__size-input:checked +
+  .curated-outfit__size-label,
+  .curated-outfit
+  .curated-outfit__size--selected
   .curated-outfit__size-label {
-    border-color: #222;
-    background: #222;
-    color: #fff;
+    border-color: #222 !important;
+    background: #222 !important;
+    background-color: #222 !important;
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    box-shadow: inset 0 0 0 1px #222 !important;
   }
 
   .curated-outfit__size-input:focus +
