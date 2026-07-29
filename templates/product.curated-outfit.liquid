@@ -98,6 +98,65 @@
 
         </div>
 
+        {% assign mobile_featured_image = product.images.first %}
+
+        <div
+          class="curated-outfit__mobile-gallery"
+          data-mobile-gallery
+        >
+          <figure class="curated-outfit__mobile-main">
+            <img
+              class="curated-outfit__mobile-main-image"
+              src="{{ mobile_featured_image | img_url: '1200x' }}"
+              srcset="
+                {{ mobile_featured_image | img_url: '400x' }} 400w,
+                {{ mobile_featured_image | img_url: '600x' }} 600w,
+                {{ mobile_featured_image | img_url: '800x' }} 800w,
+                {{ mobile_featured_image | img_url: '1000x' }} 1000w,
+                {{ mobile_featured_image | img_url: '1200x' }} 1200w
+              "
+              sizes="calc(100vw - 30px)"
+              alt="{{ mobile_featured_image.alt | default: product.title | escape }}"
+              width="{{ mobile_featured_image.width }}"
+              height="{{ mobile_featured_image.height }}"
+              loading="eager"
+              data-mobile-main-image
+            >
+          </figure>
+
+          {% if product.images.size > 1 %}
+            <div
+              class="curated-outfit__mobile-thumbnails"
+              role="group"
+              aria-label="Choose a product image"
+            >
+              {% for image in product.images %}
+                <button
+                  type="button"
+                  class="curated-outfit__mobile-thumbnail{% if forloop.first %} curated-outfit__mobile-thumbnail--active{% endif %}"
+                  aria-label="Show image {{ forloop.index }} of {{ product.images.size }}"
+                  aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                  data-mobile-thumbnail
+                  data-image-src="{{ image | img_url: '1200x' }}"
+                  data-image-srcset="{{ image | img_url: '400x' }} 400w, {{ image | img_url: '600x' }} 600w, {{ image | img_url: '800x' }} 800w, {{ image | img_url: '1000x' }} 1000w, {{ image | img_url: '1200x' }} 1200w"
+                  data-image-alt="{{ image.alt | default: product.title | escape }}"
+                  data-image-width="{{ image.width }}"
+                  data-image-height="{{ image.height }}"
+                >
+                  <img
+                    class="curated-outfit__mobile-thumbnail-image"
+                    src="{{ image | img_url: '180x' }}"
+                    alt=""
+                    width="{{ image.width }}"
+                    height="{{ image.height }}"
+                    loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                  >
+                </button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
       {% else %}
 
         <div class="curated-outfit__no-media">
@@ -670,7 +729,68 @@
     '[data-curated-outfit-message]'
   );
 
+  var mobileGallery = root.querySelector(
+    '[data-mobile-gallery]'
+  );
+
   var outfitItems = root.querySelectorAll('[data-outfit-item]');
+
+  if (mobileGallery) {
+    var mobileMainImage = mobileGallery.querySelector(
+      '[data-mobile-main-image]'
+    );
+
+    var mobileThumbnails = mobileGallery.querySelectorAll(
+      '[data-mobile-thumbnail]'
+    );
+
+    Array.prototype.forEach.call(
+      mobileThumbnails,
+      function(thumbnail) {
+        thumbnail.addEventListener(
+          'click',
+          function() {
+            if (!mobileMainImage) {
+              return;
+            }
+
+            mobileMainImage.src = thumbnail.getAttribute(
+              'data-image-src'
+            );
+            mobileMainImage.srcset = thumbnail.getAttribute(
+              'data-image-srcset'
+            );
+            mobileMainImage.alt = thumbnail.getAttribute(
+              'data-image-alt'
+            ) || '';
+            mobileMainImage.width = thumbnail.getAttribute(
+              'data-image-width'
+            );
+            mobileMainImage.height = thumbnail.getAttribute(
+              'data-image-height'
+            );
+
+            Array.prototype.forEach.call(
+              mobileThumbnails,
+              function(item) {
+                var isActive = item === thumbnail;
+
+                item.classList.toggle(
+                  'curated-outfit__mobile-thumbnail--active',
+                  isActive
+                );
+
+                item.setAttribute(
+                  'aria-current',
+                  isActive ? 'true' : 'false'
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  }
 
   function showMessage(message, type) {
     if (!messageElement) {
@@ -1320,6 +1440,10 @@
     height: auto;
   }
 
+  .curated-outfit__mobile-gallery {
+    display: none;
+  }
+
   .curated-outfit__no-media {
     padding: 50px 20px;
     background: #f5f5f5;
@@ -1703,18 +1827,89 @@
     }
 
     .curated-outfit__media {
-      order: 2;
-      margin-top: 28px;
+      order: 1;
+      margin-top: 0;
     }
 
     .curated-outfit__media-grid {
-      grid-template-columns: 1fr;
-      gap: 4px;
+      display: none;
+    }
+
+    .curated-outfit__mobile-gallery {
+      display: block;
+      width: 100%;
+    }
+
+    .curated-outfit__mobile-main {
+      width: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+
+    .curated-outfit__mobile-main-image {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .curated-outfit__mobile-thumbnails {
+      display: flex;
+      width: 100%;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 2px 2px 8px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .curated-outfit__mobile-thumbnail {
+      box-sizing: border-box;
+      display: block;
+      flex: 0 0 76px;
+      width: 76px;
+      height: 92px;
+      min-height: 0 !important;
+      margin: 0;
+      padding: 2px;
+      overflow: hidden;
+      scroll-snap-align: start;
+      border: 1px solid #c7c7c7;
+      border-radius: 0;
+      background: #fff;
+      box-shadow: none;
+      cursor: pointer;
+    }
+
+    .curated-outfit__mobile-thumbnail::before,
+    .curated-outfit__mobile-thumbnail::after {
+      display: none !important;
+      content: none !important;
+    }
+
+    .curated-outfit__mobile-thumbnail:hover,
+    .curated-outfit__mobile-thumbnail--active {
+      border-color: #222;
+      box-shadow: inset 0 0 0 2px #222;
+    }
+
+    .curated-outfit__mobile-thumbnail:focus-visible {
+      outline: 2px solid #222;
+      outline-offset: 2px;
+    }
+
+    .curated-outfit__mobile-thumbnail-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .curated-outfit__info {
-      order: 1;
-      margin-top: 0;
+      order: 2;
+      margin-top: 8px;
     }
 
     .curated-outfit__info-inner {
